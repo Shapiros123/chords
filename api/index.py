@@ -23,21 +23,33 @@ def scrape_song():
     if not target_url:
         return jsonify({"error": "No URL provided"}), 400
 
-    headers = {'User-Agent': 'Mozilla/5.0'}
-    response = requests.get(target_url, headers=headers)
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept-Language': 'en-US,en;q=0.9,he;q=0.8'
+    }
 
-    if response.status_code != 200:
-        return jsonify({"error": "Failed to fetch song"}), 500
+    try:
+        response = requests.get(target_url, headers=headers, timeout=10)
+        # Automatically detect and apply correct Hebrew encoding
+        response.encoding = response.apparent_encoding
 
-    soup = BeautifulSoup(response.text, 'html.parser')
-    content_div = soup.find('div', id='songContentTPL')
+        if response.status_code != 200:
+            return jsonify({"error": "Failed to fetch song from source"}), 500
 
-    if not content_div:
-        return jsonify({"error": "Song content not found"}), 404
+        soup = BeautifulSoup(response.text, 'html.parser')
 
-    # Clean out ads, scripts, and unnecessary elements
-    for unwanted in content_div.find_all(['script', 'style', 'iframe', 'ins', 'ads']):
-        unwanted.decompose()
+        # Target Tab4U's native content containers
+        content_div = soup.find('div', id='songContentTPL') or soup.find('div', id='songContent') or soup.find('div',
+                                                                                                               class_='song_block')
 
-    # Return the raw native HTML structure so the browser renders Tab4U's layout grid natively
-    return jsonify({"html": str(content_div)})
+        if not content_div:
+            return jsonify({"error": "Song content block not found"}), 404
+
+        # Clean out ads, scripts, and unnecessary elements
+        for unwanted in content_div.find_all(['script', 'style', 'iframe', 'ins', 'ads']):
+            unwanted.decompose()
+
+        return jsonify({"html": str(content_div)})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
