@@ -481,6 +481,9 @@
 
                             songContainer.style.direction = isHebrew ? 'rtl' : 'ltr';
                             songContainer.style.textAlign = isHebrew ? 'right' : 'left';
+                            
+                            // Initialize chords to run through our cleanup even if semitones = 0
+                            updateSongDisplay();
                         })
                         .catch(() => {
                             songContainer.innerHTML = "Failed to fetch song content.";
@@ -490,7 +493,8 @@
             });
         }
 
-        const chordRegex = /\b([A-G][#b]?(?:m|maj|min|dim|aug|sus|add|[0-9])*(?:\/[A-G][#b]?)?)\b/g;
+        // Fixed Regex: Old \b failed to match trailing '#' symbols on chords, preventing them from shifting.
+        const chordRegex = /\b([A-G][#b]?(?:m|maj|min|dim|aug|sus|add|[0-9])*(?:\/[A-G][#b]?)?)(?![a-zA-Z0-9#b])/g;
 
         function renderFormattedSong(htmlContent) {
             const compact = htmlContent
@@ -517,7 +521,11 @@
 
         function transposeChord(chord, amount) {
             const semitones = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-            const flatMap = { "Db": "C#", "Eb": "D#", "Gb": "F#", "Ab": "G#", "Bb": "A#" };
+            // Expanded flatMap to catch extreme edge cases
+            const flatMap = { 
+                "Db": "C#", "Eb": "D#", "Gb": "F#", "Ab": "G#", "Bb": "A#",
+                "Cb": "B",  "Fb": "E",  "E#": "F",  "B#": "C"
+            };
             
             const match = chord.match(/^([A-G][#b]?)(.*)$/);
             if (!match) return chord;
@@ -532,12 +540,20 @@
             let index = semitones.indexOf(root);
             if (index === -1) return chord;
             
-            let newIndex = (index + amount + 12) % 12;
-            return semitones[newIndex] + modifier;
+            // Fixed negative modulo bug for infinite transposing
+            let newIndex = (((index + amount) % 12) + 12) % 12;
+            let result = semitones[newIndex] + modifier;
+
+            // CLEANUP ENGINE: Aggressively eliminates accidental artifacts 
+            result = result.replace(/##+/g, '#');
+            result = result.replace(/b#/g, '#');
+            result = result.replace(/bb+/g, 'b');
+
+            return result;
         }
 
         function shiftChordText(text, semitones) {
-            if (semitones === 0) return text;
+            // Removed 'if (semitones === 0)' early return so cleanup rules always apply
             return text.replace(chordRegex, (match, chord) => {
                 let parts = chord.split('/');
                 let transposedRoot = transposeChord(parts[0], semitones);
