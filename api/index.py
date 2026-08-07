@@ -41,15 +41,14 @@ def scrape_song():
 
         for row in content_div.find_all(['tr', 'p', 'div']):
             text = row.get_text().replace('\xa0', ' ')
-            # Clean up massive 10+ space gaps while preserving the proportional layout columns
-            cleaned = re.sub(r'[ \t]{8,}', '    ', text).rstrip('\n\r')
+            # Compress runs of 3 or more spaces down to 1 space to eliminate huge gaps
+            cleaned = re.sub(r' {3,}', ' ', text).rstrip('\n\r')
             if cleaned.strip():
                 extracted_lines.append(cleaned)
 
     if not extracted_lines and content_div:
         raw_text = content_div.get_text().replace('\xa0', ' ')
-        extracted_lines = [re.sub(r'[ \t]{8,}', '    ', line).rstrip('\n\r') for line in raw_text.splitlines() if
-                           line.strip()]
+        extracted_lines = [re.sub(r' {3,}', ' ', line).rstrip('\n\r') for line in raw_text.splitlines() if line.strip()]
 
     # Strip uniform leading indentation
     non_empty = [l for l in extracted_lines if l.strip()]
