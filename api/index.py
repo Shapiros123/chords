@@ -40,17 +40,21 @@ def scrape_song():
             br.replace_with("\n")
 
         for row in content_div.find_all(['tr', 'p', 'div']):
-            text = row.get_text().replace('\xa0', ' ')
-            # Compress runs of 7 or more spaces down to 1 space
-            cleaned = re.sub(r' {7,}', ' ', text).rstrip('\n\r')
+            text = row.get_text()
+
+            # Normalize all unicode non-breaking/special spaces to normal spaces
+            text = text.replace('\xa0', ' ').replace('\u200b', '').replace('\u3000', ' ')
+            text = re.sub(r'[\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f]', ' ', text)
+
+            cleaned = text.rstrip('\n\r')
             if cleaned.strip():
                 extracted_lines.append(cleaned)
 
     if not extracted_lines and content_div:
         raw_text = content_div.get_text().replace('\xa0', ' ')
-        extracted_lines = [re.sub(r' {7,}', ' ', line).rstrip('\n\r') for line in raw_text.splitlines() if line.strip()]
+        extracted_lines = [line.rstrip('\n\r') for line in raw_text.splitlines() if line.strip()]
 
-    # Strip uniform leading indentation
+    # Strip uniform leading block indentation safely
     non_empty = [l for l in extracted_lines if l.strip()]
     if non_empty:
         min_indent = min(len(l) - len(l.lstrip(' \t')) for l in non_empty)
