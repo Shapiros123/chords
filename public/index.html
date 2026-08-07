@@ -500,14 +500,18 @@
         // gives a clean, consistently-spaced chord line above each lyric
         // line (classic chord-sheet style) instead of imprecise stretching.
         function renderFormattedSong(htmlContent) {
+            // Restore tab4u's original nbsp-based chord spacing (no longer
+            // collapsed to single spaces) now that the real bug — leftover
+            // tab/newline whitespace from tab4u's pretty-printed HTML source
+            // being preserved by white-space:pre — is fixed below. That
+            // leading indentation was very likely what was corrupting the
+            // alignment in the first place, so it's worth testing whether
+            // tab4u's actual spacing lines up correctly on its own now.
             const compact = htmlContent
-                .replace(/(\u00A0){2,}/g, ' ')
                 // Strip leading/trailing whitespace (tabs, newlines, spaces)
                 // left over from how tab4u's HTML source is pretty-printed.
-                // With white-space:pre preserving spacing, this leftover
-                // indentation was rendering as extra blank lines and a
-                // horizontal offset on lyric lines that chord lines didn't
-                // have — internal single spaces between words are untouched.
+                // Internal nbsp spacing (used for chord-to-syllable
+                // alignment) is left untouched.
                 .replace(/(<td[^>]*>)\s+/g, '$1')
                 .replace(/\s+(<\/td>)/g, '$1');
 
