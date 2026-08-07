@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tab4U Clone</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            height: 100vh;
+            background-color: #f8f9fa;
+        }
+
+        /* Left Sidebar: The Setlist */
+        #sidebar {
+            width: 320px;
+            background-color: #ffffff;
+            border-right: 1px solid #dee2e6;
+            overflow-y: auto;
+            padding: 20px 0;
+        }
+
+        .sidebar-header {
+            padding: 0 20px 10px 20px;
+            font-size: 14px;
+            color: #6c757d;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: bold;
+        }
+
+        .song-item {
+            padding: 12px 20px;
+            cursor: pointer;
+            border-bottom: 1px solid #f1f3f5;
+            transition: background-color 0.2s;
+        }
+
+        .song-item:hover {
+            background-color: #e9ecef;
+        }
+
+        .song-item strong {
+            display: block;
+            color: #212529;
+            margin-bottom: 4px;
+        }
+
+        .song-item span {
+            font-size: 14px;
+            color: #868e96;
+        }
+
+        /* Right Panel: The Song Viewer */
+        #main-view {
+            flex: 1;
+            padding: 40px 60px;
+            overflow-y: auto;
+        }
+
+        #song-title {
+            margin: 0 0 5px 0;
+            color: #212529;
+            font-size: 32px;
+        }
+
+        #song-artist {
+            margin: 0 0 30px 0;
+            color: #495057;
+            font-weight: normal;
+        }
+
+        /* Using monospace font so the chords line up over lyrics */
+        pre#song-content {
+            font-family: "Courier New", Courier, monospace;
+            font-size: 16px;
+            line-height: 1.5;
+            color: #212529;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            white-space: pre;
+            overflow-x: auto;
+        }
+
+        .placeholder-text {
+            color: #adb5bd;
+            margin-top: 100px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar for Song List -->
+    <div id="sidebar">
+        <div class="sidebar-header">Tab Archive</div>
+        <div id="song-list"></div>
+    </div>
+
+    <!-- Main View for Chords -->
+    <div id="main-view">
+        <h1 id="song-title" class="placeholder-text">Select a song from the list</h1>
+        <h3 id="song-artist"></h3>
+        <pre id="song-content" style="display: none;"></pre>
+    </div>
+
+    <script>
+        const songListDiv = document.getElementById('song-list');
+        const titleEl = document.getElementById('song-title');
+        const artistEl = document.getElementById('song-artist');
+        const contentEl = document.getElementById('song-content');
+
+        // Fetch song directory from your Vercel Python backend using a relative path
+        fetch('/api/songs')
+            .then(response => response.json())
+            .then(songs => {
+                songs.forEach(song => {
+                    const item = document.createElement('div');
+                    item.className = 'song-item';
+                    item.innerHTML = `<strong>${song.Title}</strong><span>${song.Artist}</span>`;
+
+                    // When clicked, trigger the on-demand scraper endpoint
+                    item.addEventListener('click', () => {
+                        titleEl.textContent = song.Title;
+                        artistEl.textContent = song.Artist;
+
+                        titleEl.classList.remove('placeholder-text');
+                        contentEl.style.display = 'block';
+                        contentEl.style.direction = 'ltr';
+                        contentEl.style.textAlign = 'left';
+                        contentEl.textContent = "Loading chords from Tab4U...";
+
+                        fetch(`/api/scrape?url=${encodeURIComponent(song.URL)}`)
+                            .then(res => res.json())
+                            .then(data => {
+                                if (data.error) {
+                                    contentEl.textContent = "Error loading song.";
+                                    return;
+                                }
+
+                                contentEl.textContent = data.content;
+
+                                // Automatically flip text direction for Hebrew songs
+                                const isHebrew = /[\u0590-\u05FF]/.test(song.Title);
+                                contentEl.style.direction = isHebrew ? 'rtl' : 'ltr';
+                                contentEl.style.textAlign = isHebrew ? 'right' : 'left';
+                            })
+                            .catch(() => {
+                                contentEl.textContent = "Failed to fetch song data.";
+                            });
+                    });
+
+                    songListDiv.appendChild(item);
+                });
+            })
+            .catch(() => {
+                songListDiv.innerHTML = '<div style="padding: 20px; color: red;">Failed to load song index.</div>';
+            });
+    </script>
+</body>
+</html>
