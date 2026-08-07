@@ -56,6 +56,52 @@
             scroll-behavior: smooth;
         }
 
+        /* Mobile Header */
+        #mobile-header {
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px 20px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--glass-border);
+            z-index: 50;
+            flex-shrink: 0;
+        }
+
+        #mobile-header h2 {
+            font-size: 18px;
+            font-weight: 700;
+            margin: 0;
+            color: var(--text-main);
+        }
+
+        #menu-toggle {
+            background: none;
+            border: none;
+            color: var(--text-main);
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        /* Sidebar Overlay */
+        #sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 90;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        #sidebar-overlay.active {
+            opacity: 1;
+        }
+
         /* Sidebar */
         #sidebar {
             width: 360px;
@@ -68,6 +114,8 @@
             height: 100%;
             flex-shrink: 0;
             box-shadow: 10px 0 30px rgba(0, 0, 0, 0.3);
+            z-index: 100;
+            transition: transform 0.3s ease;
         }
 
         .sidebar-header {
@@ -189,6 +237,7 @@
             display: flex;
             align-items: center;
             gap: 12px;
+            flex-wrap: wrap; /* Allows toolbars to wrap on small screens */
         }
 
         .toolbar-group {
@@ -334,9 +383,71 @@
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.12); border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.25); }
+
+        /* === Mobile Responsiveness === */
+        @media (max-width: 900px) {
+            body {
+                flex-direction: column;
+            }
+            
+            #mobile-header {
+                display: flex;
+            }
+            
+            #sidebar {
+                position: fixed;
+                left: 0;
+                top: 0;
+                bottom: 0;
+                transform: translateX(-100%);
+                width: 85%;
+                max-width: 380px;
+            }
+            
+            #sidebar.open {
+                transform: translateX(0);
+            }
+            
+            #sidebar-overlay {
+                display: block;
+                pointer-events: none;
+            }
+            
+            #sidebar-overlay.active {
+                pointer-events: auto;
+            }
+
+            .viewer-header {
+                flex-direction: column;
+                align-items: flex-start;
+                padding: 15px 20px;
+            }
+            
+            .toolbar-container {
+                width: 100%;
+                justify-content: flex-start;
+            }
+            
+            .content-scroll {
+                padding: 20px 15px;
+            }
+            
+            #song-content-container {
+                padding: 20px;
+            }
+        }
     </style>
 </head>
 <body>
+
+    <!-- Mobile Header -->
+    <div id="mobile-header">
+        <h2>TabStudio</h2>
+        <button id="menu-toggle">☰</button>
+    </div>
+
+    <!-- Mobile Sidebar Overlay -->
+    <div id="sidebar-overlay"></div>
 
     <!-- Sidebar -->
     <div id="sidebar">
@@ -424,6 +535,24 @@
         const simplifyBtn = document.getElementById('simplify-btn');
         const easiestKeyBtn = document.getElementById('easiest-key-btn');
 
+        // Mobile Menu Logic
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+        const menuToggle = document.getElementById('menu-toggle');
+
+        function toggleMenu() {
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('active');
+        }
+
+        function closeMenu() {
+            sidebar.classList.remove('open');
+            overlay.classList.remove('active');
+        }
+
+        menuToggle.addEventListener('click', toggleMenu);
+        overlay.addEventListener('click', closeMenu);
+
         fetch('/api/songs')
             .then(res => res.json())
             .then(songs => {
@@ -452,6 +581,11 @@
                     stopAutoScroll();
                     document.querySelectorAll('.song-item').forEach(el => el.classList.remove('active'));
                     item.classList.add('active');
+
+                    // Auto close sidebar on mobile when a song is clicked
+                    if (window.innerWidth <= 900) {
+                        closeMenu();
+                    }
 
                     placeholderEl.style.display = 'none';
                     viewerHeader.style.display = 'flex';
