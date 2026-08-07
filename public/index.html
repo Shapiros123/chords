@@ -24,7 +24,6 @@
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--bg-base);
-            /* Dynamic background glow effect */
             background-image:
                 radial-gradient(circle at 10% 20%, rgba(56, 189, 248, 0.12) 0%, transparent 40%),
                 radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.08) 0%, transparent 40%);
@@ -382,6 +381,12 @@
             songsToRender.forEach(song => {
                 const item = document.createElement('div');
                 item.className = 'song-item';
+
+                // Check if title or artist is Hebrew for right-to-left sidebar rendering
+                const isHebrew = /[\u0590-\u05FF]/.test(song.Title) || /[\u0590-\u05FF]/.test(song.Artist);
+                item.style.direction = isHebrew ? 'rtl' : 'ltr';
+                item.style.textAlign = isHebrew ? 'right' : 'left';
+
                 item.innerHTML = `<strong>${song.Title}</strong><span>${song.Artist}</span>`;
 
                 item.addEventListener('click', () => {
@@ -407,11 +412,9 @@
                                 return;
                             }
 
-                            // Process and clean up English chord alignment
-                            originalSongContent = formatSongChords(data.content);
+                            originalSongContent = data.content;
                             contentEl.textContent = originalSongContent;
 
-                            const isHebrew = /[\u0590-\u05FF]/.test(song.Title);
                             contentEl.style.direction = isHebrew ? 'rtl' : 'ltr';
                             contentEl.style.textAlign = isHebrew ? 'right' : 'left';
                         })
@@ -421,20 +424,6 @@
                 });
                 songListDiv.appendChild(item);
             });
-        }
-
-        // Smart Chord Alignment Fixer for English Chords
-        function formatSongChords(rawContent) {
-            const lines = rawContent.split('\n');
-            const chordRegex = /^([A-G][b#]?(?:m|maj|min|dim|aug|sus|[0-9])?(\/[A-G][b#]?)?\s*)+$/;
-
-            return lines.map(line => {
-                // If a line consists mostly of chords separated by spaces, normalize spacing so they don't drift
-                if (chordRegex.test(line.trim()) && line.trim().length > 0) {
-                    return line.replace(/\s{2,}/g, '    ');
-                }
-                return line;
-            }).join('\n');
         }
 
         searchInput.addEventListener('input', (e) => {
