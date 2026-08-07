@@ -36,25 +36,35 @@ def scrape_song():
     content_div = soup.find('div', id='songContentTPL')
 
     if content_div:
-        for br in content_div.find_all("br"):
-            br.replace_with("\n")
+        # Tab4U organizes song text inside HTML table rows and cells with website padding
+        for row in content_div.find_all('tr'):
+            cells = row.find_all(['td', 'th'])
+            if cells:
+                cell_texts = []
+                for cell in cells:
+                    # Normalize all unicode spaces inside each cell
+                    t = cell.get_text().replace('\xa0', ' ').replace('\u200b', '').replace('\u3000', ' ')
+                    t = re.sub(r'[\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f]', ' ', t).strip()
+                    if t:
+                        cell_texts.append(t)
+                # Combine table cells cleanly with a fixed separation space
+                line = "   ".join(cell_texts)
+            else:
+                line = row.get_text().replace('\xa0', ' ').replace('\u200b', '')
 
-        for row in content_div.find_all(['tr', 'p', 'div']):
-            text = row.get_text()
-
-            # Normalize all unicode non-breaking/special spaces to normal spaces
-            text = text.replace('\xa0', ' ').replace('\u200b', '').replace('\u3000', ' ')
-            text = re.sub(r'[\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f]', ' ', text)
-
-            cleaned = text.rstrip('\n\r')
+            cleaned = line.rstrip('\n\r')
             if cleaned.strip():
                 extracted_lines.append(cleaned)
 
+    # Fallback if no table structure is found
     if not extracted_lines and content_div:
-        raw_text = content_div.get_text().replace('\xa0', ' ')
-        extracted_lines = [line.rstrip('\n\r') for line in raw_text.splitlines() if line.strip()]
+        raw_text = content_div.get_text().replace('\xa0', ' ').replace('\u200b', '')
+        for line in raw_text.splitlines():
+            cleaned_line = line.rstrip('\n\r')
+            if cleaned_line.strip():
+                extracted_lines.append(cleaned_line)
 
-    # Strip uniform leading block indentation safely
+    # Clean leading uniform block indentation
     non_empty = [l for l in extracted_lines if l.strip()]
     if non_empty:
         min_indent = min(len(l) - len(l.lstrip(' \t')) for l in non_empty)
