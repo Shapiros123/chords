@@ -358,12 +358,12 @@
             </div>
 
             <div class="toolbar-container">
-                <!-- Transpose Controls (1 semitone steps) -->
+                <!-- Transpose Controls (0.5 steps = 1 semitone) -->
                 <div class="toolbar-group">
                     <label>Key:</label>
-                    <button class="btn" onclick="transpose(-1)">-1</button>
+                    <button class="btn" onclick="transpose(-0.5)">-0.5</button>
                     <span id="transpose-val" style="font-size: 11px; font-weight: bold; min-width: 28px; text-align: center;">0</span>
-                    <button class="btn" onclick="transpose(1)">+1</button>
+                    <button class="btn" onclick="transpose(0.5)">+0.5</button>
                     <button class="btn" id="simplify-btn" onclick="toggleSimplify()" style="margin-left: 4px; background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.4); color: var(--success);">Simplify</button>
                     <button class="btn" id="easiest-key-btn" onclick="toggleEasiestKey()" style="background: rgba(56, 189, 248, 0.15); border-color: rgba(56, 189, 248, 0.4); color: var(--accent);">Easiest Key</button>
                 </div>
@@ -493,7 +493,6 @@
             });
         }
 
-        // Fixed Regex: Old \b failed to match trailing '#' symbols on chords, preventing them from shifting.
         const chordRegex = /\b([A-G][#b]?(?:m|maj|min|dim|aug|sus|add|[0-9])*(?:\/[A-G][#b]?)?)(?![a-zA-Z0-9#b])/g;
 
         function renderFormattedSong(htmlContent) {
@@ -521,7 +520,6 @@
 
         function transposeChord(chord, amount) {
             const semitones = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-            // Expanded flatMap to catch extreme edge cases
             const flatMap = { 
                 "Db": "C#", "Eb": "D#", "Gb": "F#", "Ab": "G#", "Bb": "A#",
                 "Cb": "B",  "Fb": "E",  "E#": "F",  "B#": "C"
@@ -540,11 +538,9 @@
             let index = semitones.indexOf(root);
             if (index === -1) return chord;
             
-            // Fixed negative modulo bug for infinite transposing
             let newIndex = (((index + amount) % 12) + 12) % 12;
             let result = semitones[newIndex] + modifier;
 
-            // CLEANUP ENGINE: Aggressively eliminates accidental artifacts 
             result = result.replace(/##+/g, '#');
             result = result.replace(/b#/g, '#');
             result = result.replace(/bb+/g, 'b');
@@ -553,7 +549,6 @@
         }
 
         function shiftChordText(text, semitones) {
-            // Removed 'if (semitones === 0)' early return so cleanup rules always apply
             return text.replace(chordRegex, (match, chord) => {
                 let parts = chord.split('/');
                 let transposedRoot = transposeChord(parts[0], semitones);
@@ -605,8 +600,11 @@
                 isEasiestMode = false;
                 updateEasiestKeyUI();
             }
-            currentSemitone = currentSemitone + amount;
-            transposeValEl.textContent = (currentSemitone > 0 ? "+" + currentSemitone : currentSemitone);
+            // amount is 0.5 (representing 1 semitone)
+            currentSemitone = currentSemitone + Math.round(amount * 2);
+            
+            let displayVal = currentSemitone / 2;
+            transposeValEl.textContent = (displayVal > 0 ? "+" + displayVal : displayVal);
             updateSongDisplay();
         }
 
@@ -617,7 +615,9 @@
                 currentSemitone = previousSemitone;
                 isEasiestMode = false;
                 updateEasiestKeyUI();
-                transposeValEl.textContent = (currentSemitone > 0 ? "+" + currentSemitone : currentSemitone);
+                
+                let displayVal = currentSemitone / 2;
+                transposeValEl.textContent = (displayVal > 0 ? "+" + displayVal : displayVal);
                 updateSongDisplay();
                 return;
             }
@@ -657,7 +657,9 @@
             currentSemitone = bestShift;
             isEasiestMode = true;
             updateEasiestKeyUI();
-            transposeValEl.textContent = (currentSemitone > 0 ? "+" + currentSemitone : currentSemitone);
+            
+            let displayVal = currentSemitone / 2;
+            transposeValEl.textContent = (displayVal > 0 ? "+" + displayVal : displayVal);
             updateSongDisplay();
         }
 
