@@ -598,7 +598,6 @@
             if (!originalHtmlContent) return;
 
             if (isEasiestMode) {
-                // Toggle off: restore previous key
                 currentSemitone = previousSemitone;
                 isEasiestMode = false;
                 updateEasiestKeyUI();
@@ -614,12 +613,9 @@
             let bestShift = 0;
             let minScore = Infinity;
 
-            // Find key with minimum accidentals (#) and clean guitar-friendly roots (C, G, D, A, F, E)
-            const guitarFriendly = { "C": 0, "G": 0, "D": 0, "A": 0, "F": 0, "E": 0, "Am": 0, "Em": 0, "Dm": 0 };
-
             for (let shift = -6; shift <= 5; shift++) {
-                let accidentalCount = 0;
-                let unfriendlyCount = 0;
+                let sharpCount = 0;
+                let nonStandardCount = 0;
 
                 chordSpans.forEach(span => {
                     const original = span.dataset.original;
@@ -628,15 +624,14 @@
                     let match = shifted.match(/^([A-G][#b]?)/);
                     if (match) {
                         if (match[1].includes('#')) {
-                            accidentalCount++;
-                        } else if (!["C", "G", "D", "A", "F", "E"].includes(match[1])) {
-                            unfriendlyCount++;
+                            sharpCount++;
+                        } else if (!["C", "G", "D", "A", "F", "E", "Bb", "Eb"].includes(match[1])) {
+                            nonStandardCount++;
                         }
                     }
                 });
 
-                // Weighted score: heavily penalize sharps/accidentals, lightly penalize less common naturals
-                let score = accidentalCount * 100 + unfriendlyCount * 10 + Math.abs(shift);
+                let score = sharpCount * 1000 + nonStandardCount * 10 + Math.abs(shift);
                 if (score < minScore) {
                     minScore = score;
                     bestShift = shift;
