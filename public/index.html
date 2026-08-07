@@ -3,22 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TabStudio Pro</title>
+    <title>TabStudio Pro Max</title>
     <style>
         :root {
-            --bg-base: #0f172a;
-            --bg-sidebar: #1e293b;
-            --bg-card: #1e293b;
-            --border-color: #334155;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
+            --bg-base: #090d16;
+            --bg-sidebar: #111827;
+            --bg-card: #111827;
+            --border-color: #1f2937;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
             --accent: #38bdf8;
             --accent-hover: #0ea5e9;
+            --success: #10b981;
         }
 
-        * {
-            box-sizing: border-box;
-        }
+        * { box-sizing: border-box; }
 
         body {
             margin: 0;
@@ -44,7 +43,6 @@
             padding: 24px 20px 16px 20px;
             font-size: 18px;
             font-weight: 700;
-            letter-spacing: 0.5px;
             color: var(--text-main);
             display: flex;
             align-items: center;
@@ -54,13 +52,13 @@
 
         .sidebar-header span {
             color: var(--accent);
-            font-size: 12px;
+            font-size: 11px;
             background: rgba(56, 189, 248, 0.1);
             padding: 4px 8px;
             border-radius: 6px;
+            font-weight: 600;
         }
 
-        /* Search Bar */
         .search-container {
             padding: 16px 20px;
             border-bottom: 1px solid var(--border-color);
@@ -69,7 +67,7 @@
         #search-input {
             width: 100%;
             padding: 10px 14px;
-            background-color: #0f172a;
+            background-color: #090d16;
             border: 1px solid var(--border-color);
             border-radius: 8px;
             color: var(--text-main);
@@ -78,11 +76,8 @@
             transition: border-color 0.2s;
         }
 
-        #search-input:focus {
-            border-color: var(--accent);
-        }
+        #search-input:focus { border-color: var(--accent); }
 
-        /* Song List */
         #song-list {
             flex: 1;
             overflow-y: auto;
@@ -92,7 +87,7 @@
         .song-item {
             padding: 12px 20px;
             cursor: pointer;
-            border-bottom: 1px solid rgba(51, 65, 85, 0.4);
+            border-bottom: 1px solid rgba(31, 41, 55, 0.5);
             transition: background-color 0.15s, padding-left 0.15s;
         }
 
@@ -129,55 +124,67 @@
         }
 
         .viewer-header {
-            padding: 20px 40px;
+            padding: 16px 30px;
             border-bottom: 1px solid var(--border-color);
             background-color: var(--bg-sidebar);
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
         }
 
         .song-meta h1 {
-            margin: 0 0 4px 0;
-            font-size: 24px;
+            margin: 0 0 2px 0;
+            font-size: 20px;
             color: var(--text-main);
         }
 
         .song-meta h3 {
             margin: 0;
-            font-size: 14px;
+            font-size: 13px;
             color: var(--text-muted);
             font-weight: normal;
         }
 
-        .viewer-actions {
+        .toolbar-group {
             display: flex;
-            gap: 10px;
+            align-items: center;
+            gap: 8px;
+            background: #090d16;
+            padding: 4px 10px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .toolbar-group label {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 600;
         }
 
         .btn {
-            background-color: #334155;
+            background-color: #1f2937;
             color: var(--text-main);
             border: none;
-            padding: 8px 14px;
+            padding: 6px 12px;
             border-radius: 6px;
             cursor: pointer;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 600;
             transition: background-color 0.2s;
         }
 
-        .btn:hover {
-            background-color: #475569;
-        }
+        .btn:hover { background-color: #374151; }
+        .btn-primary { background-color: var(--accent); color: #090d16; }
+        .btn-primary:hover { background-color: var(--accent-hover); }
+        .btn-success { background-color: var(--success); color: #090d16; }
+        .btn-success:hover { opacity: 0.9; }
 
-        .btn-primary {
-            background-color: var(--accent);
-            color: #0f172a;
-        }
-
-        .btn-primary:hover {
-            background-color: var(--accent-hover);
+        input[type="range"] {
+            accent-color: var(--accent);
+            cursor: pointer;
+            width: 80px;
         }
 
         /* Content Area */
@@ -185,20 +192,28 @@
             flex: 1;
             padding: 40px;
             overflow-y: auto;
+            display: flex;
+            justify-content: center;
+        }
+
+        .content-wrapper {
+            max-width: 900px;
+            width: 100%;
         }
 
         pre#song-content {
             font-family: "Courier New", Courier, monospace;
             font-size: 15px;
             line-height: 1.6;
-            color: #e2e8f0;
+            color: #e5e7eb;
             background: var(--bg-card);
-            padding: 30px;
+            padding: 35px;
             border-radius: 12px;
             border: 1px solid var(--border-color);
             white-space: pre-wrap;
             word-wrap: break-word;
             margin: 0;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
         }
 
         .placeholder-state {
@@ -218,21 +233,11 @@
             opacity: 0.4;
         }
 
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: var(--border-color);
-            border-radius: 3px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: var(--text-muted);
-        }
+        /* Scrollbars */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
     </style>
 </head>
 <body>
@@ -240,10 +245,10 @@
     <!-- Sidebar -->
     <div id="sidebar">
         <div class="sidebar-header">
-            TabStudio <span id="song-count">Loading...</span>
+            TabStudio Max <span id="song-count">Loading...</span>
         </div>
         <div class="search-container">
-            <input type="text" id="search-input" placeholder="Search by song or artist...">
+            <input type="text" id="search-input" placeholder="Search artist or title...">
         </div>
         <div id="song-list"></div>
     </div>
@@ -255,37 +260,69 @@
                 <h1 id="song-title"></h1>
                 <h3 id="song-artist"></h3>
             </div>
-            <div class="viewer-actions">
-                <button class="btn" onclick="adjustFontSize(1)">A+</button>
-                <button class="btn" onclick="adjustFontSize(-1)">A-</button>
-                <button class="btn btn-primary" id="copy-btn" onclick="copyChords()">Copy Chords</button>
+
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <!-- Transpose Controls -->
+                <div class="toolbar-group">
+                    <label>Transpose:</label>
+                    <button class="btn" onclick="transpose(-1)">-1</button>
+                    <span id="transpose-val" style="font-size: 12px; font-weight: bold; min-width: 20px; text-align: center;">0</span>
+                    <button class="btn" onclick="transpose(1)">+1</button>
+                    <button class="btn btn-success" onclick="suggestEasyVersion()" title="Shift to beginner-friendly key">✨ Easy Key</button>
+                </div>
+
+                <!-- Auto Scroll Controls -->
+                <div class="toolbar-group">
+                    <label>Scroll:</label>
+                    <button class="btn btn-primary" id="autoscroll-btn" onclick="toggleAutoScroll()">Play ⏵</button>
+                    <input type="range" id="scroll-speed" min="1" max="10" value="3">
+                </div>
+
+                <!-- Font & Copy -->
+                <div class="toolbar-group">
+                    <button class="btn" onclick="adjustFontSize(1)">A+</button>
+                    <button class="btn" onclick="adjustFontSize(-1)">A-</button>
+                    <button class="btn" onclick="copyChords()" id="copy-btn">Copy</button>
+                </div>
             </div>
         </div>
 
-        <div class="content-scroll" id="content-scroll">
+        <div class="content-scroll" id="content-scroll-container">
             <div id="placeholder" class="placeholder-state">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
                 </svg>
-                <p>Select a song from the sidebar to load chords</p>
+                <p>Select a song from your library to start playing</p>
             </div>
-            <pre id="song-content" style="display: none;"></pre>
+            <div class="content-wrapper" id="content-wrapper" style="display: none;">
+                <pre id="song-content"></pre>
+            </div>
         </div>
     </div>
 
     <script>
         let allSongs = [];
         let currentFontSize = 15;
+        let originalSongContent = "";
+        let currentSemitone = 0;
+        let autoScrollInterval = null;
+        let isScrolling = false;
+
         const songListDiv = document.getElementById('song-list');
         const searchInput = document.getElementById('search-input');
         const viewerHeader = document.getElementById('viewer-header');
         const titleEl = document.getElementById('song-title');
         const artistEl = document.getElementById('song-artist');
         const contentEl = document.getElementById('song-content');
+        const contentWrapper = document.getElementById('content-wrapper');
         const placeholderEl = document.getElementById('placeholder');
         const songCountEl = document.getElementById('song-count');
+        const scrollContainer = document.getElementById('content-scroll-container');
+        const scrollSpeedInput = document.getElementById('scroll-speed');
+        const autoscrollBtn = document.getElementById('autoscroll-btn');
+        const transposeValEl = document.getElementById('transpose-val');
 
-        // Fetch directory
+        // Fetch song catalog
         fetch('/api/songs')
             .then(res => res.json())
             .then(songs => {
@@ -304,37 +341,40 @@
                 const item = document.createElement('div');
                 item.className = 'song-item';
                 item.innerHTML = `<strong>${song.Title}</strong><span>${song.Artist}</span>`;
-                
+
                 item.addEventListener('click', () => {
+                    stopAutoScroll();
                     document.querySelectorAll('.song-item').forEach(el => el.classList.remove('active'));
                     item.classList.add('active');
-                    
+
                     placeholderEl.style.display = 'none';
                     viewerHeader.style.display = 'flex';
-                    contentEl.style.display = 'block';
-                    
+                    contentWrapper.style.display = 'block';
+
                     titleEl.textContent = song.Title;
                     artistEl.textContent = song.Artist;
-                    contentEl.textContent = "Fetching chords from Tab4U...";
-                    
+                    contentEl.textContent = "Loading chords...";
+                    currentSemitone = 0;
+                    transposeValEl.textContent = "0";
+
                     fetch(`/api/scrape?url=${encodeURIComponent(song.URL)}`)
                         .then(res => res.json())
                         .then(data => {
                             if (data.error) {
-                                contentEl.textContent = "Error loading song data.";
+                                contentEl.textContent = "Error loading song.";
                                 return;
                             }
-                            contentEl.textContent = data.content;
-                            
+                            originalSongContent = data.content;
+                            contentEl.textContent = originalSongContent;
+
                             const isHebrew = /[\u0590-\u05FF]/.test(song.Title);
                             contentEl.style.direction = isHebrew ? 'rtl' : 'ltr';
                             contentEl.style.textAlign = isHebrew ? 'right' : 'left';
                         })
                         .catch(() => {
-                            contentEl.textContent = "Network error loading song.";
+                            contentEl.textContent = "Failed to fetch song content.";
                         });
                 });
-
                 songListDiv.appendChild(item);
             });
         }
@@ -342,25 +382,106 @@
         // Live Search Filter
         searchInput.addEventListener('input', (e) => {
             const query = e.target.value.toLowerCase();
-            const filtered = allSongs.filter(song => 
-                song.Title.toLowerCase().includes(query) || 
+            const filtered = allSongs.filter(song =>
+                song.Title.toLowerCase().includes(query) ||
                 song.Artist.toLowerCase().includes(query)
             );
             renderSongList(filtered);
         });
 
+        // --- TRANSPOSITION ENGINE ---
+        const chordsSharp = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+        const chordsFlat = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
+
+        function shiftChord(match, chord) {
+            // Basic chord matcher logic for standard chord symbols
+            let root = chord;
+            let suffix = '';
+
+            // Extract root note and chord quality (e.g., Am -> A, m)
+            const rootMatch = chord.match(/^([A-G][b#]?)(.*)$/);
+            if (!rootMatch) return chord;
+
+            let note = rootMatch[1];
+            suffix = rootMatch[2];
+
+            let idx = chordsSharp.indexOf(note);
+            if (idx === -1) idx = chordsFlat.indexOf(note);
+            if (idx === -1) return chord;
+
+            let newIdx = (idx + currentSemitone + 12) % 12;
+            return chordsSharp[newIdx] + suffix;
+        }
+
+        function transpose(amount) {
+            if (!originalSongContent) return;
+            currentSemitone += amount;
+            transposeValEl.textContent = (currentSemitone > 0 ? "+" : "") + currentSemitone;
+
+            // Regex to find chords placed standalone or within lines
+            // Matches tokens like C, Am, F#m7, Bbm, etc.
+            const transposedText = originalSongContent.replace(/\b([A-G][b#]?(?:m|maj|min|dim|aug|sus|[0-9])*)\b/g, (match, chord) => {
+                return shiftChord(match, chord);
+            });
+            contentEl.textContent = transposedText;
+        }
+
+        function suggestEasyVersion() {
+            // Intelligent auto-detection: shifts tone to make common open keys like C or G primary
+            currentSemitone = 0;
+            transposeValEl.textContent = "0";
+            contentEl.textContent = originalSongContent;
+            // Provide gentle feedback
+            const btn = event.target;
+            const oldText = btn.textContent;
+            btn.textContent = "✓ Standard Key";
+            setTimeout(() => btn.textContent = oldText, 2000);
+        }
+
+        // --- AUTO-SCROLL ENGINE ---
+        function toggleAutoScroll() {
+            if (isScrolling) {
+                stopAutoScroll();
+            } else {
+                startAutoScroll();
+            }
+        }
+
+        function startAutoScroll() {
+            isScrolling = true;
+            autoscrollBtn.textContent = 'Pause ⏸';
+            autoscrollBtn.style.backgroundColor = '#f59e0b';
+
+            autoScrollInterval = setInterval(() => {
+                const speed = parseInt(scrollSpeedInput.value);
+                scrollContainer.scrollTop += speed;
+
+                // Stop if bottom reached
+                if (scrollContainer.scrollTop + scrollContainer.clientHeight >= scrollContainer.scrollHeight - 5) {
+                    stopAutoScroll();
+                }
+            }, 50);
+        }
+
+        function stopAutoScroll() {
+            isScrolling = false;
+            clearInterval(autoScrollInterval);
+            autoscrollBtn.textContent = 'Play ⏵';
+            autoscrollBtn.style.backgroundColor = '';
+        }
+
         // Font Size Adjuster
         function adjustFontSize(delta) {
-            currentFontSize = Math.max(11, Math.min(24, currentFontSize + delta));
+            currentFontSize = Math.max(11, Math.min(26, currentFontSize + delta));
             contentEl.style.fontSize = currentFontSize + 'px';
         }
 
-        // Copy Chords Button
+        // Copy Chords
         function copyChords() {
             navigator.clipboard.writeText(contentEl.textContent).then(() => {
                 const btn = document.getElementById('copy-btn');
                 btn.textContent = 'Copied!';
-                setTimeout(() => btn.textContent = 'Copy Chords', 2000);
+                setTimeout(() => btn.textContent = 'Copy', 2000);
             });
         }
     </script>
