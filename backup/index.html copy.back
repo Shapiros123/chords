@@ -364,8 +364,7 @@
                     <button class="btn" onclick="transpose(-1)">-1</button>
                     <span id="transpose-val" style="font-size: 11px; font-weight: bold; min-width: 28px; text-align: center;">0</span>
                     <button class="btn" onclick="transpose(1)">+1</button>
-                    <button class="btn" id="simplify-btn" onclick="toggleSimplify()" style="margin-left: 4px; background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.4); color: var(--success);">Simplify</button>
-                    <button class="btn" id="easiest-key-btn" onclick="autoEasiestKey()" style="background: rgba(56, 189, 248, 0.15); border-color: rgba(56, 189, 248, 0.4); color: var(--accent);">Easiest Key</button>
+                    <button class="btn" id="easy-mode-btn" onclick="toggleEasyMode()" style="margin-left: 4px; background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.4); color: var(--success);">Easy Ver</button>
                 </div>
 
                 <!-- Auto Scroll Controls -->
@@ -402,7 +401,7 @@
         let currentFontSize = 15;
         let originalHtmlContent = "";
         let currentSemitone = 0;
-        let isSimplifyMode = false;
+        let isEasyMode = false;
         let autoScrollInterval = null;
         let isScrolling = false;
 
@@ -419,7 +418,7 @@
         const scrollSpeedInput = document.getElementById('scroll-speed');
         const autoscrollBtn = document.getElementById('autoscroll-btn');
         const transposeValEl = document.getElementById('transpose-val');
-        const simplifyBtn = document.getElementById('simplify-btn');
+        const easyModeBtn = document.getElementById('easy-mode-btn');
 
         fetch('/api/songs')
             .then(res => res.json())
@@ -458,9 +457,9 @@
                     artistEl.textContent = song.Artist;
                     songContainer.innerHTML = "Loading native sheet...";
                     currentSemitone = 0;
-                    isSimplifyMode = false;
+                    isEasyMode = false;
                     transposeValEl.textContent = "0";
-                    updateSimplifyUI();
+                    updateEasyModeUI();
 
                     fetch(`/api/scrape?url=${encodeURIComponent(song.URL)}`)
                         .then(res => res.json())
@@ -555,6 +554,7 @@
         }
 
         function simplifySingleChord(chord) {
+            // Strip complex extensions (7, maj7, sus4, add9, dim, aug, etc.) but preserve minor (m)
             let rootMatch = chord.match(/^([A-G][#b]?)(.*)$/);
             if (!rootMatch) return chord;
             let note = rootMatch[1];
@@ -569,7 +569,7 @@
             chordSpans.forEach(span => {
                 const original = span.dataset.original || span.textContent;
                 let text = shiftChordText(original, currentSemitone);
-                if (isSimplifyMode) {
+                if (isEasyMode) {
                     text = simplifyChordText(text);
                 }
                 span.textContent = text;
@@ -583,55 +583,24 @@
             updateSongDisplay();
         }
 
-        function autoEasiestKey() {
+        function toggleEasyMode() {
             if (!originalHtmlContent) return;
-            const chordSpans = songContainer.querySelectorAll('.c_C');
-            if (chordSpans.length === 0) return;
-
-            let bestShift = 0;
-            let minAccidentals = Infinity;
-
-            for (let shift = -6; shift <= 5; shift++) {
-                let accidentalCount = 0;
-                chordSpans.forEach(span => {
-                    const original = span.dataset.original;
-                    if (!original) return;
-                    let shifted = shiftChordText(original, shift);
-                    let rootMatch = shifted.match(/^([A-G][#b]?)/);
-                    if (rootMatch && rootMatch[1].length > 1) {
-                        accidentalCount++;
-                    }
-                });
-
-                if (accidentalCount < minAccidentals) {
-                    minAccidentals = accidentalCount;
-                    bestShift = shift;
-                }
-            }
-
-            currentSemitone = bestShift;
-            transposeValEl.textContent = (currentSemitone > 0 ? "+" + currentSemitone : currentSemitone);
+            isEasyMode = !isEasyMode;
+            updateEasyModeUI();
             updateSongDisplay();
         }
 
-        function toggleSimplify() {
-            if (!originalHtmlContent) return;
-            isSimplifyMode = !isSimplifyMode;
-            updateSimplifyUI();
-            updateSongDisplay();
-        }
-
-        function updateSimplifyUI() {
-            if (isSimplifyMode) {
-                simplifyBtn.style.background = 'var(--success)';
-                simplifyBtn.style.color = '#050b14';
-                simplifyBtn.style.borderColor = 'transparent';
-                simplifyBtn.style.boxShadow = '0 0 10px rgba(16, 185, 129, 0.4)';
+        function updateEasyModeUI() {
+            if (isEasyMode) {
+                easyModeBtn.style.background = 'var(--success)';
+                easyModeBtn.style.color = '#050b14';
+                easyModeBtn.style.borderColor = 'transparent';
+                easyModeBtn.style.boxShadow = '0 0 10px rgba(16, 185, 129, 0.4)';
             } else {
-                simplifyBtn.style.background = 'rgba(16, 185, 129, 0.15)';
-                simplifyBtn.style.color = 'var(--success)';
-                simplifyBtn.style.borderColor = 'rgba(16, 185, 129, 0.4)';
-                simplifyBtn.style.boxShadow = 'none';
+                easyModeBtn.style.background = 'rgba(16, 185, 129, 0.15)';
+                easyModeBtn.style.color = 'var(--success)';
+                easyModeBtn.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+                easyModeBtn.style.boxShadow = 'none';
             }
         }
 
