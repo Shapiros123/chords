@@ -365,7 +365,7 @@
                     <span id="transpose-val" style="font-size: 11px; font-weight: bold; min-width: 28px; text-align: center;">0</span>
                     <button class="btn" onclick="transpose(1)">+1</button>
                     <button class="btn" id="simplify-btn" onclick="toggleSimplify()" style="margin-left: 4px; background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.4); color: var(--success);">Simplify</button>
-                    <button class="btn" id="easiest-key-btn" onclick="autoEasiestKey()" style="background: rgba(56, 189, 248, 0.15); border-color: rgba(56, 189, 248, 0.4); color: var(--accent);">Easiest Key</button>
+                    <button class="btn" id="easiest-key-btn" onclick="toggleEasiestKey()" style="background: rgba(56, 189, 248, 0.15); border-color: rgba(56, 189, 248, 0.4); color: var(--accent);">Easiest Key</button>
                 </div>
 
                 <!-- Auto Scroll Controls -->
@@ -402,7 +402,9 @@
         let currentFontSize = 15;
         let originalHtmlContent = "";
         let currentSemitone = 0;
+        let previousSemitone = 0;
         let isSimplifyMode = false;
+        let isEasiestMode = false;
         let autoScrollInterval = null;
         let isScrolling = false;
 
@@ -420,6 +422,7 @@
         const autoscrollBtn = document.getElementById('autoscroll-btn');
         const transposeValEl = document.getElementById('transpose-val');
         const simplifyBtn = document.getElementById('simplify-btn');
+        const easiestKeyBtn = document.getElementById('easiest-key-btn');
 
         fetch('/api/songs')
             .then(res => res.json())
@@ -458,9 +461,12 @@
                     artistEl.textContent = song.Artist;
                     songContainer.innerHTML = "Loading native sheet...";
                     currentSemitone = 0;
+                    previousSemitone = 0;
                     isSimplifyMode = false;
+                    isEasiestMode = false;
                     transposeValEl.textContent = "0";
                     updateSimplifyUI();
+                    updateEasiestKeyUI();
 
                     fetch(`/api/scrape?url=${encodeURIComponent(song.URL)}`)
                         .then(res => res.json())
@@ -513,13 +519,14 @@
             const semitones = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
             const flatMap = { "Db": "C#", "Eb": "D#", "Gb": "F#", "Ab": "G#", "Bb": "A#" };
             
-            let root = chord.slice(0, 2);
-            let modifier = chord.slice(2);
+            const match = chord.match(/^([A-G][#b]?)(.*)$/);
+            if (!match) return chord;
+            
+            let root = match[1];
+            let modifier = match[2];
+            
             if (flatMap[root]) {
                 root = flatMap[root];
-            } else {
-                root = chord[0];
-                modifier = chord.slice(1);
             }
             
             let index = semitones.indexOf(root);
@@ -555,10 +562,10 @@
         }
 
         function simplifySingleChord(chord) {
-            let rootMatch = chord.match(/^([A-G][#b]?)(.*)$/);
-            if (!rootMatch) return chord;
-            let note = rootMatch[1];
-            let suffix = rootMatch[2];
+            const match = chord.match(/^([A-G][#b]?)(.*)$/);
+            if (!match) return chord;
+            let note = match[1];
+            let suffix = match[2];
 
             let isMinor = suffix.startsWith('m') && !suffix.startsWith('maj');
             return note + (isMinor ? 'm' : '');
@@ -578,40 +585,83 @@
 
         function transpose(amount) {
             if (!originalHtmlContent) return;
+            if (isEasiestMode) {
+                isEasiestMode = false;
+                updateEasiestKeyUI();
+            }
             currentSemitone = currentSemitone + amount;
             transposeValEl.textContent = (currentSemitone > 0 ? "+" + currentSemitone : currentSemitone);
             updateSongDisplay();
         }
 
-        function autoEasiestKey() {
+        function toggleEasiestKey() {
             if (!originalHtmlContent) return;
+
+            if (isEasiestMode) {
+                // Toggle off: restore previous key
+                currentSemitone = previousSemitone;
+                isEasiestMode = false;
+                updateEasiestKeyUI();
+                transposeValEl.textContent = (currentSemitone > 0 ? "+" + currentSemitone : currentSemitone);
+                updateSongDisplay();
+                return;
+            }
+
             const chordSpans = songContainer.querySelectorAll('.c_C');
             if (chordSpans.length === 0) return;
 
+            previousSemitone = currentSemitone;
             let bestShift = 0;
-            let minAccidentals = Infinity;
+            let minScore = Infinity;
+
+            // Find key with minimum accidentals (#) and clean guitar-friendly roots (C, G, D, A, F, E)
+            const guitarFriendly = { "C": 0, "G": 0, "D": 0, "A": 0, "F": 0, "E": 0, "Am": 0, "Em": 0, "Dm": 0 };
 
             for (let shift = -6; shift <= 5; shift++) {
                 let accidentalCount = 0;
+                let unfriendlyCount = 0;
+
                 chordSpans.forEach(span => {
                     const original = span.dataset.original;
                     if (!original) return;
                     let shifted = shiftChordText(original, shift);
-                    let rootMatch = shifted.match(/^([A-G][#b]?)/);
-                    if (rootMatch && rootMatch[1].length > 1) {
-                        accidentalCount++;
+                    let match = shifted.match(/^([A-G][#b]?)/);
+                    if (match) {
+                        if (match[1].includes('#')) {
+                            accidentalCount++;
+                        } else if (!["C", "G", "D", "A", "F", "E"].includes(match[1])) {
+                            unfriendlyCount++;
+                        }
                     }
                 });
 
-                if (accidentalCount < minAccidentals) {
-                    minAccidentals = accidentalCount;
+                // Weighted score: heavily penalize sharps/accidentals, lightly penalize less common naturals
+                let score = accidentalCount * 100 + unfriendlyCount * 10 + Math.abs(shift);
+                if (score < minScore) {
+                    minScore = score;
                     bestShift = shift;
                 }
             }
 
             currentSemitone = bestShift;
+            isEasiestMode = true;
+            updateEasiestKeyUI();
             transposeValEl.textContent = (currentSemitone > 0 ? "+" + currentSemitone : currentSemitone);
             updateSongDisplay();
+        }
+
+        function updateEasiestKeyUI() {
+            if (isEasiestMode) {
+                easiestKeyBtn.style.background = 'var(--accent)';
+                easiestKeyBtn.style.color = '#050b14';
+                easiestKeyBtn.style.borderColor = 'transparent';
+                easiestKeyBtn.style.boxShadow = '0 0 10px rgba(56, 189, 248, 0.4)';
+            } else {
+                easiestKeyBtn.style.background = 'rgba(56, 189, 248, 0.15)';
+                easiestKeyBtn.style.color = 'var(--accent)';
+                easiestKeyBtn.style.borderColor = 'rgba(56, 189, 248, 0.4)';
+                easiestKeyBtn.style.boxShadow = 'none';
+            }
         }
 
         function toggleSimplify() {
