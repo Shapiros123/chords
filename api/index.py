@@ -40,17 +40,18 @@ def scrape_song():
             br.replace_with("\n")
 
         for row in content_div.find_all(['tr', 'p', 'div']):
-            # Get text but strictly preserve non-breaking spaces and inner formatting spaces
             text = row.get_text().replace('\xa0', ' ')
-            cleaned = text.rstrip('\n\r')
+            # Clean up redundant multiple spaces within lines while preserving structural columns
+            cleaned = re.sub(r'[ \t]{3,}', '  ', text).rstrip('\n\r')
             if cleaned.strip():
                 extracted_lines.append(cleaned)
 
     if not extracted_lines and content_div:
         raw_text = content_div.get_text().replace('\xa0', ' ')
-        extracted_lines = [line.rstrip('\n\r') for line in raw_text.splitlines() if line.strip()]
+        extracted_lines = [re.sub(r'[ \t]{3,}', '  ', line).rstrip('\n\r') for line in raw_text.splitlines() if
+                           line.strip()]
 
-    # Minimal indent normalization that NEVER modifies inner spacing between chords
+    # Clean leading whitespace offset from the whole block
     non_empty = [l for l in extracted_lines if l.strip()]
     if non_empty:
         min_indent = min(len(l) - len(l.lstrip(' \t')) for l in non_empty)
