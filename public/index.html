@@ -234,11 +234,11 @@
             width: 100%;
         }
 
-        /* Liquid Glass Tab Card */
-        pre#song-content {
+        /* Tab4U Native CSS Clone Container */
+        #song-content-container {
             font-family: "Courier New", Courier, monospace;
-            font-size: 14px;
-            line-height: 1.8;
+            font-size: 15px;
+            line-height: 1.6;
             color: #f1f5f9;
             background: var(--glass-card);
             backdrop-filter: blur(12px);
@@ -247,8 +247,19 @@
             border-radius: 14px;
             border: 1px solid var(--glass-border);
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-            white-space: pre;
             overflow-x: auto;
+        }
+
+        /* Cloned Tab4U Table Grid Styling */
+        #song-content-container table {
+            border-collapse: collapse;
+            width: auto;
+        }
+        #song-content-container td, #song-content-container th {
+            padding: 0;
+            margin: 0;
+            white-space: pre;
+            vertical-align: baseline;
         }
 
         /* Chord Pill Highlighting */
@@ -260,7 +271,7 @@
             padding: 0 4px;
             border-radius: 4px;
             font-weight: bold;
-            margin-right: 3px;
+            margin-right: 2px;
         }
 
         .placeholder-state {
@@ -341,15 +352,15 @@
                 <p>Select a song from your library to start playing</p>
             </div>
             <div class="content-wrapper" id="content-wrapper" style="display: none;">
-                <pre id="song-content"></pre>
+                <div id="song-content-container"></div>
             </div>
         </div>
     </div>
 
     <script>
         let allSongs = [];
-        let currentFontSize = 14;
-        let originalSongContent = "";
+        let currentFontSize = 15;
+        let originalHtmlContent = "";
         let currentSemitone = 0;
         let autoScrollInterval = null;
         let isScrolling = false;
@@ -359,7 +370,7 @@
         const viewerHeader = document.getElementById('viewer-header');
         const titleEl = document.getElementById('song-title');
         const artistEl = document.getElementById('song-artist');
-        const contentEl = document.getElementById('song-content');
+        const songContainer = document.getElementById('song-content-container');
         const contentWrapper = document.getElementById('content-wrapper');
         const placeholderEl = document.getElementById('placeholder');
         const songCountEl = document.getElementById('song-count');
@@ -403,7 +414,7 @@
 
                     titleEl.textContent = song.Title;
                     artistEl.textContent = song.Artist;
-                    contentEl.textContent = "Loading chords...";
+                    songContainer.innerHTML = "Loading native sheet...";
                     currentSemitone = 0;
                     transposeValEl.textContent = "0";
 
@@ -411,50 +422,48 @@
                         .then(res => res.json())
                         .then(data => {
                             if (data.error) {
-                                contentEl.textContent = "Error loading song.";
+                                songContainer.innerHTML = "Error loading song.";
                                 return;
                             }
 
-                            originalSongContent = data.content;
-                            renderFormattedSong(originalSongContent);
+                            originalHtmlContent = data.html;
+                            renderFormattedSong(originalHtmlContent);
 
-                            contentEl.style.direction = isHebrew ? 'rtl' : 'ltr';
-                            contentEl.style.textAlign = isHebrew ? 'right' : 'left';
+                            songContainer.style.direction = isHebrew ? 'rtl' : 'ltr';
+                            songContainer.style.textAlign = isHebrew ? 'right' : 'left';
                         })
                         .catch(() => {
-                            contentEl.textContent = "Failed to fetch song content.";
+                            songContainer.innerHTML = "Failed to fetch song content.";
                         });
                 });
                 songListDiv.appendChild(item);
             });
         }
 
-        const chordRegex = /(^|\s)([A-G][#b]?(?:m|maj|min|dim|aug|sus|add|[0-9])*(?:\/[A-G][#b]?)?)(?=\s|$)/g;
+        const chordRegex = /\b([A-G][#b]?(?:m|maj|min|dim|aug|sus|add|[0-9])*(?:\/[A-G][#b]?)?)\b/g;
 
-        function renderFormattedSong(textContent) {
-            const lines = textContent.split('\n');
+        // Renders native HTML and highlights text nodes matching chords with pills
+        function renderFormattedSong(htmlContent) {
+            songContainer.innerHTML = htmlContent;
 
-            const formattedLines = lines.map(line => {
-                const trimmed = line.trim();
-                if (trimmed.length > 0 && /^[A-G]/.test(trimmed)) {
-                    const words = trimmed.split(/\s+/);
-                    const singleCheck = /^([A-G][#b]?(?:m|maj|min|dim|aug|sus|add|[0-9])*(?:\/[A-G][#b]?)?)$/;
-                    const chordCount = words.filter(w => singleCheck.test(w)).length;
+            // Walk through text nodes inside the song container to wrap chords cleanly
+            const walker = document.createTreeWalker(songContainer, NodeFilter.SHOW_TEXT, null, false);
+            let node;
+            const textNodes = [];
+            while (node = walker.nextNode()) {
+                textNodes.push(node);
+            }
 
-                    if (chordCount / words.length >= 0.3) {
-                        return line.replace(chordRegex, (match, prefix, chord) => {
-                            return prefix + '<span class="chord">' + chord + '</span>';
-                        });
-                    }
+            textNodes.forEach(textNode => {
+                let text = textNode.nodeValue;
+                if (chordRegex.test(text)) {
+                    // Reset regex index
+                    chordRegex.lastIndex = 0;
+                    const span = document.createElement('span');
+                    span.innerHTML = text.replace(chordRegex, '<span class="chord">$1</span>');
+                    textNode.parentNode.replaceChild(span, textNode);
                 }
-                return escapeHtml(line);
             });
-
-            contentEl.innerHTML = formattedLines.join('\n');
-        }
-
-        function escapeHtml(text) {
-            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
         }
 
         searchInput.addEventListener('input', (e) => {
@@ -466,7 +475,6 @@
             renderSongList(filtered);
         });
 
-        // 24-step pitch scale map to support 0.5 semitone shifting cleanly without double sharps
         const noteToPitch24 = {
             'C': 0, 'B#': 0,
             'C#': 1, 'Db': 1,
@@ -481,19 +489,18 @@
             'A#': 10, 'Bb': 10,
             'B': 11, 'Cb': 11
         };
-
         const pitch24Notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
         function shiftChordText(text, semitones) {
             if (semitones === 0) return text;
-            return text.replace(chordRegex, (match, prefix, chord) => {
+            return text.replace(chordRegex, (match, chord) => {
                 let parts = chord.split('/');
                 let transposedRoot = shiftSingleChord(parts[0], semitones);
                 if (parts.length > 1) {
                     let transposedBass = shiftSingleChord(parts[1], semitones);
-                    return prefix + transposedRoot + '/' + transposedBass;
+                    return transposedRoot + '/' + transposedBass;
                 }
-                return prefix + transposedRoot;
+                return transposedRoot;
             });
         }
 
@@ -514,19 +521,23 @@
             let isQuarterTone = (newStep % 2 !== 0);
 
             let noteName = pitch24Notes[finalPitchIndex];
-            if (isQuarterTone) {
-                noteName += '#';
-            }
+            if (isQuarterTone) noteName += '#';
             return noteName + suffix;
         }
 
         function transpose(amount) {
-            if (!originalSongContent) return;
+            if (!originalHtmlContent) return;
             currentSemitone = Math.round((currentSemitone + amount) * 2) / 2;
-
             transposeValEl.textContent = (currentSemitone > 0 ? "+" + currentSemitone : currentSemitone);
-            const transposedText = shiftChordText(originalSongContent, currentSemitone);
-            renderFormattedSong(transposedText);
+
+            // Re-render original HTML with shifted chords
+            renderFormattedSong(originalHtmlContent);
+
+            // Perform live DOM chord text node substitution for transposition
+            const chordSpans = songContainer.querySelectorAll('.chord');
+            chordSpans.forEach(span => {
+                span.textContent = shiftChordText(span.textContent, currentSemitone);
+            });
         }
 
         function toggleAutoScroll() {
@@ -560,12 +571,12 @@
         }
 
         function adjustFontSize(delta) {
-            currentFontSize = Math.max(11, Math.min(22, currentFontSize + delta));
-            contentEl.style.fontSize = currentFontSize + 'px';
+            currentFontSize = Math.max(11, Math.min(24, currentFontSize + delta));
+            songContainer.style.fontSize = currentFontSize + 'px';
         }
 
         function copyChords() {
-            navigator.clipboard.writeText(contentEl.innerText).then(() => {
+            navigator.clipboard.writeText(songContainer.innerText).then(() => {
                 const btn = document.getElementById('copy-btn');
                 btn.textContent = 'Copied!';
                 setTimeout(() => btn.textContent = 'Copy', 2000);
