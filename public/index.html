@@ -309,12 +309,12 @@
             </div>
 
             <div class="toolbar-container">
-                <!-- Transpose Controls (1 semitone steps) -->
+                <!-- Transpose Controls (0.5 steps) -->
                 <div class="toolbar-group">
                     <label>Key:</label>
-                    <button class="btn" onclick="transpose(-1)">-1</button>
-                    <span id="transpose-val" style="font-size: 11px; font-weight: bold; min-width: 24px; text-align: center;">0</span>
-                    <button class="btn" onclick="transpose(1)">+1</button>
+                    <button class="btn" onclick="transpose(-0.5)">-0.5</button>
+                    <span id="transpose-val" style="font-size: 11px; font-weight: bold; min-width: 28px; text-align: center;">0</span>
+                    <button class="btn" onclick="transpose(0.5)">+0.5</button>
                 </div>
 
                 <!-- Auto Scroll Controls -->
@@ -466,7 +466,8 @@
             renderSongList(filtered);
         });
 
-        const noteToPitch = {
+        // 24-step pitch scale map to support 0.5 semitone shifting cleanly without double sharps
+        const noteToPitch24 = {
             'C': 0, 'B#': 0,
             'C#': 1, 'Db': 1,
             'D': 2,
@@ -480,7 +481,8 @@
             'A#': 10, 'Bb': 10,
             'B': 11, 'Cb': 11
         };
-        const pitchToNoteSharp = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+
+        const pitch24Notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
         function shiftChordText(text, semitones) {
             if (semitones === 0) return text;
@@ -501,17 +503,28 @@
             let note = rootMatch[1];
             let suffix = rootMatch[2];
 
-            let basePitch = noteToPitch[note];
+            let basePitch = noteToPitch24[note];
             if (basePitch === undefined) return chord;
 
-            let newPitch = (basePitch + semitones + 12) % 12;
-            return pitchToNoteSharp[newPitch] + suffix;
+            let currentStep = basePitch * 2;
+            let stepShift = Math.round(semitones * 2);
+            let newStep = (currentStep + stepShift + 24) % 24;
+
+            let finalPitchIndex = Math.floor(newStep / 2);
+            let isQuarterTone = (newStep % 2 !== 0);
+
+            let noteName = pitch24Notes[finalPitchIndex];
+            if (isQuarterTone) {
+                noteName += '#';
+            }
+            return noteName + suffix;
         }
 
         function transpose(amount) {
             if (!originalSongContent) return;
-            currentSemitone += amount;
-            transposeValEl.textContent = (currentSemitone > 0 ? "+" : "") + currentSemitone;
+            currentSemitone = Math.round((currentSemitone + amount) * 2) / 2;
+
+            transposeValEl.textContent = (currentSemitone > 0 ? "+" + currentSemitone : currentSemitone);
             const transposedText = shiftChordText(originalSongContent, currentSemitone);
             renderFormattedSong(transposedText);
         }
