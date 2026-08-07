@@ -27,11 +27,11 @@
 
         /* === App Liquid Glass Theme Shell === */
         :root {
-            --bg-base: #030712;
-            --glass-bg: rgba(17, 24, 39, 0.7);
-            --glass-card: rgba(15, 23, 42, 0.55);
-            --glass-border: rgba(255, 255, 255, 0.1);
-            --glass-border-hover: rgba(56, 189, 248, 0.4);
+            --bg-base: #050b14;
+            --glass-bg: rgba(17, 24, 39, 0.65);
+            --glass-card: rgba(15, 23, 42, 0.5);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-border-hover: rgba(56, 189, 248, 0.3);
             --text-main: #f8fafc;
             --text-muted: #94a3b8;
             --accent: #38bdf8;
@@ -45,10 +45,9 @@
         body {
             font-family: 'open sans hebrew', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--bg-base);
-            background-image: 
-                radial-gradient(circle at 15% 50%, rgba(56, 189, 248, 0.15), transparent 35%),
-                radial-gradient(circle at 85% 30%, rgba(139, 92, 246, 0.15), transparent 35%);
-            background-attachment: fixed;
+            background-image:
+                radial-gradient(circle at 10% 20%, rgba(56, 189, 248, 0.12) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.08) 0%, transparent 40%);
             color: var(--text-main);
             display: flex;
             height: 100vh;
@@ -57,158 +56,97 @@
             scroll-behavior: smooth;
         }
 
-        /* Mobile Header */
-        #mobile-header {
-            display: none;
-            align-items: center;
-            justify-content: space-between;
-            padding: 15px 20px;
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-bottom: 1px solid var(--glass-border);
-            z-index: 50;
-        }
-        #mobile-header h2 { font-size: 18px; font-weight: 700; }
-        .hamburger {
-            background: none;
-            border: none;
-            color: var(--text-main);
-            font-size: 24px;
-            cursor: pointer;
-        }
-
-        /* Overlay for mobile */
-        #sidebar-overlay {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(4px);
-            z-index: 90;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-        #sidebar-overlay.active { opacity: 1; }
-
         /* Sidebar */
         #sidebar {
-            width: 380px;
-            background: rgba(17, 24, 39, 0.85);
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
+            width: 360px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
             border-right: 1px solid var(--glass-border);
             display: flex;
             flex-direction: column;
             height: 100%;
             flex-shrink: 0;
-            box-shadow: 15px 0 40px rgba(0, 0, 0, 0.4);
-            z-index: 100;
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 10px 0 30px rgba(0, 0, 0, 0.3);
         }
 
         .sidebar-header {
-            padding: 24px 24px 16px 24px;
-            font-size: 18px;
+            padding: 20px 20px 14px 20px;
+            font-size: 17px;
             font-weight: 700;
             color: var(--text-main);
             display: flex;
             align-items: center;
             justify-content: space-between;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
+            border-bottom: 1px solid var(--glass-border);
         }
 
         .sidebar-header span {
-            color: var(--bg-base);
+            color: var(--accent);
             font-size: 11px;
-            background: var(--accent);
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-weight: 700;
-            letter-spacing: 0.5px;
+            background: rgba(56, 189, 248, 0.12);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-weight: 600;
         }
 
-        /* Revamped Search Bar */
         .search-container {
-            padding: 16px 24px;
+            padding: 14px 20px;
             border-bottom: 1px solid var(--glass-border);
-            background: rgba(0, 0, 0, 0.2);
-            position: relative;
-        }
-
-        .search-wrapper {
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
-
-        .search-wrapper svg {
-            position: absolute;
-            left: 14px;
-            width: 18px;
-            height: 18px;
-            color: var(--text-muted);
-            transition: color 0.3s;
+            background: rgba(10, 15, 28, 0.4);
         }
 
         #search-input {
             width: 100%;
-            padding: 12px 14px 12px 40px;
-            background: rgba(15, 23, 42, 0.6);
+            padding: 9px 12px;
+            background: rgba(5, 11, 20, 0.6);
             border: 1px solid var(--glass-border);
-            border-radius: 12px;
+            border-radius: 8px;
             color: var(--text-main);
-            font-size: 14px;
+            font-size: 13px;
             outline: none;
-            transition: all 0.3s ease;
+            transition: all 0.2s;
         }
 
-        #search-input::placeholder { color: #64748b; }
         #search-input:focus {
             border-color: var(--accent);
-            background: rgba(15, 23, 42, 0.8);
-            box-shadow: 0 0 15px rgba(56, 189, 248, 0.2);
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
         }
-        #search-input:focus + svg { color: var(--accent); }
 
         #song-list {
             flex: 1;
             overflow-y: auto;
-            padding: 10px 0;
         }
 
-        /* Revamped Song Item - Artist Focused */
         .song-item {
-            padding: 14px 24px;
+            padding: 12px 20px;
             cursor: pointer;
             border-bottom: 1px solid rgba(255, 255, 255, 0.03);
-            transition: all 0.2s ease;
-            position: relative;
+            transition: all 0.15s ease;
         }
 
         .song-item:hover {
-            background: rgba(255, 255, 255, 0.04);
-            padding-left: 28px;
+            background: rgba(56, 189, 248, 0.06);
+            padding-left: 24px;
         }
 
         .song-item.active {
-            background: linear-gradient(90deg, rgba(56, 189, 248, 0.15) 0%, transparent 100%);
-            border-left: 4px solid var(--accent);
+            background: rgba(56, 189, 248, 0.12);
+            border-left: 3px solid var(--accent);
+            border-bottom-color: var(--glass-border);
         }
 
-        /* Artist is now visually primary */
         .song-item strong {
             display: block;
-            color: var(--accent);
-            font-size: 15px;
-            margin-bottom: 4px;
-            font-weight: 700;
+            color: var(--text-main);
+            font-size: 14px;
+            margin-bottom: 2px;
         }
 
         .song-item span {
-            font-size: 13px;
-            color: var(--text-main);
-            opacity: 0.85;
+            font-size: 12px;
+            color: var(--text-muted);
         }
 
         /* Main View */
@@ -219,70 +157,74 @@
             height: 100%;
             overflow: hidden;
             background: transparent;
-            position: relative;
         }
 
         .viewer-header {
-            padding: 16px 35px;
+            padding: 14px 24px;
             border-bottom: 1px solid var(--glass-border);
-            background: rgba(17, 24, 39, 0.6);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            gap: 20px;
+            gap: 16px;
             flex-shrink: 0;
             z-index: 10;
         }
 
-        .song-meta h1 { font-size: 22px; color: var(--text-main); margin-bottom: 4px; font-weight: 700;}
-        .song-meta h3 { font-size: 14px; color: var(--accent); font-weight: 600; }
+        .song-meta h1 {
+            font-size: 18px;
+            color: var(--text-main);
+            margin-bottom: 2px;
+        }
+
+        .song-meta h3 {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: normal;
+        }
 
         .toolbar-container {
             display: flex;
             align-items: center;
             gap: 12px;
-            flex-wrap: wrap;
         }
 
         .toolbar-group {
             display: flex;
             align-items: center;
-            gap: 8px;
-            background: rgba(0, 0, 0, 0.3);
+            gap: 6px;
+            background: rgba(10, 15, 28, 0.5);
             border: 1px solid var(--glass-border);
-            padding: 6px 12px;
-            border-radius: 12px;
+            padding: 4px 10px;
+            border-radius: 8px;
         }
 
         .toolbar-group label {
             font-size: 11px;
             color: var(--text-muted);
-            font-weight: 700;
+            font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
 
         .btn {
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.06);
             color: var(--text-main);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 6px 12px;
-            border-radius: 8px;
+            border: 1px solid var(--glass-border);
+            padding: 5px 10px;
+            border-radius: 6px;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 600;
-            transition: all 0.2s ease;
+            transition: all 0.15s ease;
         }
 
         .btn:hover {
-            background: rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.12);
             border-color: var(--glass-border-hover);
-            transform: translateY(-1px);
         }
-        
-        .btn:active { transform: translateY(0); }
 
         .btn-primary {
             background: var(--accent);
@@ -291,23 +233,22 @@
         }
         .btn-primary:hover {
             background: var(--accent-hover);
-            box-shadow: 0 4px 15px rgba(56, 189, 248, 0.4);
+            box-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
         }
 
         input[type="range"] {
             accent-color: var(--accent);
             cursor: pointer;
-            width: 80px;
+            width: 70px;
         }
 
         /* Content Scroll Wrapper */
         .content-scroll {
             flex: 1;
             overflow-y: auto;
-            padding: 40px;
+            padding: 35px;
             display: flex;
             justify-content: center;
-            align-items: flex-start;
         }
 
         .content-wrapper {
@@ -321,13 +262,13 @@
             font-size: 15px;
             line-height: 1.6;
             color: #f1f5f9;
-            background: rgba(15, 23, 42, 0.4);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            padding: 40px;
-            border-radius: 16px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            background: var(--glass-card);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            padding: 35px;
+            border-radius: 14px;
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
             overflow-x: auto;
         }
 
@@ -337,27 +278,38 @@
         #song-content-container td,
         #song-content-container th {
             display: table-cell;
-            padding: 0; margin: 0;
+            padding: 0;
+            margin: 0;
             white-space: pre;
             vertical-align: baseline;
             border: none !important;
         }
-        #song-content-container td.chords_en { direction: ltr; text-align: left; }
-        #song-content-container td.chords { direction: ltr; text-align: right; }
-        #song-content-container td.song { unicode-bidi: plaintext; text-align: start; }
+        #song-content-container td.chords_en {
+            direction: ltr;
+            text-align: left;
+        }
+        #song-content-container td.chords {
+            direction: ltr;
+            text-align: right;
+        }
+        #song-content-container td.song {
+            unicode-bidi: plaintext;
+            text-align: start;
+        }
         #song-content-container td.chords,
-        #song-content-container td.chords_en { padding-top: 2px; }
+        #song-content-container td.chords_en {
+            padding-top: 2px;
+        }
 
         .chord, .c_C {
             display: inline-block;
-            background: rgba(56, 189, 248, 0.15) !important;
+            background: rgba(56, 189, 248, 0.18) !important;
             color: var(--accent) !important;
-            border: 1px solid rgba(56, 189, 248, 0.3);
-            padding: 2px 6px !important;
+            border: 1px solid rgba(56, 189, 248, 0.35);
+            padding: 0 4px !important;
             margin: 0 2px 0 0 !important;
-            border-radius: 6px;
+            border-radius: 4px;
             font-weight: bold;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
 
         .placeholder-state {
@@ -368,66 +320,23 @@
             height: 100%;
             color: var(--text-muted);
             text-align: center;
-            margin-top: 20vh;
         }
 
         .placeholder-state svg {
-            width: 56px; height: 56px;
-            margin-bottom: 16px;
-            color: rgba(255,255,255,0.1);
-            filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.2));
+            width: 44px;
+            height: 44px;
+            margin-bottom: 12px;
+            opacity: 0.3;
         }
 
         /* Scrollbars */
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.12); border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.25); }
-
-        /* === MOBILE RESPONSIVE MEDIA QUERIES === */
-        @media (max-width: 900px) {
-            body { flex-direction: column; }
-            #mobile-header { display: flex; }
-            
-            #sidebar {
-                position: fixed;
-                left: 0;
-                top: 0;
-                bottom: 0;
-                transform: translateX(-100%);
-                width: 85%;
-                max-width: 380px;
-            }
-            #sidebar.open { transform: translateX(0); }
-            #sidebar-overlay { display: block; pointer-events: none; }
-            #sidebar-overlay.active { pointer-events: auto; }
-
-            .viewer-header {
-                flex-direction: column;
-                align-items: flex-start;
-                padding: 15px 20px;
-            }
-            
-            .toolbar-container {
-                width: 100%;
-                justify-content: flex-start;
-            }
-            
-            .content-scroll { padding: 20px 15px; }
-            #song-content-container { padding: 20px; border-radius: 12px; }
-        }
     </style>
 </head>
 <body>
-
-    <!-- Mobile Header -->
-    <div id="mobile-header">
-        <h2>TabStudio</h2>
-        <button class="hamburger" id="menu-toggle">☰</button>
-    </div>
-
-    <!-- Mobile Sidebar Overlay -->
-    <div id="sidebar-overlay"></div>
 
     <!-- Sidebar -->
     <div id="sidebar">
@@ -435,12 +344,7 @@
             TabStudio <span id="song-count">Loading...</span>
         </div>
         <div class="search-container">
-            <div class="search-wrapper">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-                <input type="text" id="search-input" placeholder="Search by Artist or Title...">
-            </div>
+            <input type="text" id="search-input" placeholder="Search artist or title...">
         </div>
         <div id="song-list"></div>
     </div>
@@ -458,7 +362,7 @@
                 <div class="toolbar-group">
                     <label>Key:</label>
                     <button class="btn" onclick="transpose(-0.5)">-0.5</button>
-                    <span id="transpose-val" style="font-size: 13px; font-weight: bold; min-width: 32px; text-align: center;">0</span>
+                    <span id="transpose-val" style="font-size: 11px; font-weight: bold; min-width: 28px; text-align: center;">0</span>
                     <button class="btn" onclick="transpose(0.5)">+0.5</button>
                     <button class="btn" id="simplify-btn" onclick="toggleSimplify()" style="margin-left: 4px; background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.4); color: var(--success);">Simplify</button>
                     <button class="btn" id="easiest-key-btn" onclick="toggleEasiestKey()" style="background: rgba(56, 189, 248, 0.15); border-color: rgba(56, 189, 248, 0.4); color: var(--accent);">Easiest Key</button>
@@ -483,9 +387,9 @@
         <div class="content-scroll" id="content-scroll-container">
             <div id="placeholder" class="placeholder-state">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
                 </svg>
-                <p>Select a track from your library to begin</p>
+                <p>Select a song from your library to start playing</p>
             </div>
             <div class="content-wrapper" id="content-wrapper" style="display: none;">
                 <div id="song-content-container"></div>
@@ -520,24 +424,6 @@
         const simplifyBtn = document.getElementById('simplify-btn');
         const easiestKeyBtn = document.getElementById('easiest-key-btn');
 
-        // Mobile Menu Logic
-        const sidebar = document.getElementById('sidebar');
-        const overlay = document.getElementById('sidebar-overlay');
-        const menuToggle = document.getElementById('menu-toggle');
-
-        function toggleMenu() {
-            sidebar.classList.toggle('open');
-            overlay.classList.toggle('active');
-        }
-
-        function closeMenu() {
-            sidebar.classList.remove('open');
-            overlay.classList.remove('active');
-        }
-
-        menuToggle.addEventListener('click', toggleMenu);
-        overlay.addEventListener('click', closeMenu);
-
         fetch('/api/songs')
             .then(res => res.json())
             .then(songs => {
@@ -560,17 +446,12 @@
                 item.style.direction = isHebrew ? 'rtl' : 'ltr';
                 item.style.textAlign = isHebrew ? 'right' : 'left';
 
-                // Display hierarchy flipped: Artist is bolded, title is muted
-                item.innerHTML = `<strong>${song.Artist}</strong><span>${song.Title}</span>`;
+                item.innerHTML = `<strong>${song.Title}</strong><span>${song.Artist}</span>`;
 
                 item.addEventListener('click', () => {
                     stopAutoScroll();
                     document.querySelectorAll('.song-item').forEach(el => el.classList.remove('active'));
                     item.classList.add('active');
-                    
-                    if (window.innerWidth <= 900) {
-                        closeMenu(); // Auto close sidebar on mobile when a song is clicked
-                    }
 
                     placeholderEl.style.display = 'none';
                     viewerHeader.style.display = 'flex';
@@ -601,6 +482,7 @@
                             songContainer.style.direction = isHebrew ? 'rtl' : 'ltr';
                             songContainer.style.textAlign = isHebrew ? 'right' : 'left';
                             
+                            // Initialize chords to run through our cleanup even if semitones = 0
                             updateSongDisplay();
                         })
                         .catch(() => {
@@ -718,7 +600,7 @@
                 isEasiestMode = false;
                 updateEasiestKeyUI();
             }
-            
+            // amount is 0.5 (representing 1 semitone)
             currentSemitone = currentSemitone + Math.round(amount * 2);
             
             let displayVal = currentSemitone / 2;
@@ -786,7 +668,7 @@
                 easiestKeyBtn.style.background = 'var(--accent)';
                 easiestKeyBtn.style.color = '#050b14';
                 easiestKeyBtn.style.borderColor = 'transparent';
-                easiestKeyBtn.style.boxShadow = '0 0 15px rgba(56, 189, 248, 0.4)';
+                easiestKeyBtn.style.boxShadow = '0 0 10px rgba(56, 189, 248, 0.4)';
             } else {
                 easiestKeyBtn.style.background = 'rgba(56, 189, 248, 0.15)';
                 easiestKeyBtn.style.color = 'var(--accent)';
@@ -807,7 +689,7 @@
                 simplifyBtn.style.background = 'var(--success)';
                 simplifyBtn.style.color = '#050b14';
                 simplifyBtn.style.borderColor = 'transparent';
-                simplifyBtn.style.boxShadow = '0 0 15px rgba(16, 185, 129, 0.4)';
+                simplifyBtn.style.boxShadow = '0 0 10px rgba(16, 185, 129, 0.4)';
             } else {
                 simplifyBtn.style.background = 'rgba(16, 185, 129, 0.15)';
                 simplifyBtn.style.color = 'var(--success)';
@@ -847,7 +729,7 @@
         }
 
         function adjustFontSize(delta) {
-            currentFontSize = Math.max(11, Math.min(30, currentFontSize + delta));
+            currentFontSize = Math.max(11, Math.min(24, currentFontSize + delta));
             songContainer.style.fontSize = currentFontSize + 'px';
         }
 
@@ -855,13 +737,7 @@
             navigator.clipboard.writeText(songContainer.innerText).then(() => {
                 const btn = document.getElementById('copy-btn');
                 btn.textContent = 'Copied!';
-                btn.style.background = 'var(--success)';
-                btn.style.color = '#050b14';
-                setTimeout(() => {
-                    btn.textContent = 'Copy';
-                    btn.style.background = 'rgba(255, 255, 255, 0.05)';
-                    btn.style.color = 'var(--text-main)';
-                }, 2000);
+                setTimeout(() => btn.textContent = 'Copy', 2000);
             });
         }
     </script>
