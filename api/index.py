@@ -1,32 +1,14 @@
 from flask import Flask, jsonify, request
 import os
-import pandas as pd
-from urllib.parse import unquote
+import json
+import re
 
 app = Flask(__name__)
 
-# Load CSV data once on cold start
-csv_path = os.path.join(os.path.dirname(__file__), '..', 'tab4u_guitar_urls_only.csv')
-df = pd.read_csv(csv_path)
-
-
-def extract_names_from_url(url):
-    filename = url.split('/')[-1].replace('.html', '')
-    decoded_filename = unquote(filename)
-    parts = decoded_filename.split('_', 1)
-    name_part = parts[1] if len(parts) > 1 else decoded_filename
-    if "_-_" in name_part:
-        artist, title = name_part.split("_-_", 1)
-    else:
-        artist, title = "Unknown", name_part
-    return {
-        "Artist": artist.replace('_', ' '),
-        "Title": title.replace('_', ' '),
-        "URL": url
-    }
-
-
-song_directory = [extract_names_from_url(url) for url in df['song_url'].tolist()]
+# Load song directory from the JSON file on cold start
+json_path = os.path.join(os.path.dirname(__file__), 'songs.json')
+with open(json_path, 'r', encoding='utf-8') as f:
+    song_directory = json.load(f)
 
 
 @app.route('/api/songs', methods=['GET'])
@@ -56,7 +38,14 @@ def scrape_song():
     if content_div:
         for row in content_div.find_all('tr'):
             line = row.get_text().replace('\xa0', ' ')
-            if line.strip():
-                extracted_lines.append(line.rstrip('\n'))
+            # Clean up massive internal whitespace/tabs while preserving lyrics
+            cleaned_line = re.sub(r'[ \t]{2,}', ' ', line).strip()
+            # Keep empty lines only if they separate sections, but avoid stacking multiple blanks
+            if cleaned_line or (extracted_lines and extracted_lines[-1] != ""):
+                extracted_lines.append(cleaned_line)
 
-    return jsonify({"content": "\n".join(extracted_lines)})
+    # Join and trim excessive consecutive empty lines
+    raw_text = "\n".join(extracted_lines)
+    normalized_text = re.sub(r'\n{3,}', '\n\n', raw_text).strip()
+
+    return jsonify({"content": normalized_text})
