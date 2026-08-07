@@ -274,15 +274,19 @@
 
         /* Force correct table rendering for scraped tab4u song content,
            regardless of whether the #songContentTPL id wrapper survives
-           the fetch/insert round-trip intact. This is what keeps chord
-           rows aligned above the right lyric text. */
-        #song-content-container table {
-            border-spacing: 0 2px;
-            border-collapse: collapse;
-            width: auto;
-        }
+           the fetch/insert round-trip intact, and regardless of whether
+           each verse comes as its own separate <table> or as orphaned
+           <tbody>/<tr>/<td> without a literal <table> ancestor (both
+           happen depending on the song). Forcing these display values
+           explicitly guarantees proper table layout either way, which
+           is what keeps chord rows tight and aligned above their lyrics
+           instead of drifting apart. */
+        #song-content-container table { display: table; border-spacing: 0 1px; border-collapse: collapse; width: auto; margin: 0; }
+        #song-content-container tbody { display: table-row-group; }
+        #song-content-container tr { display: table-row; }
         #song-content-container td,
         #song-content-container th {
+            display: table-cell;
             padding: 0;
             margin: 0;
             white-space: pre;
@@ -290,20 +294,28 @@
             border: none !important;
             text-align: left;
         }
-        #song-content-container td.chords {
-            padding-top: 4px;
+        #song-content-container td.chords,
+        #song-content-container td.chords_en {
+            padding-top: 2px;
         }
 
-        /* Chord Pill Highlighting */
-        .chord {
+        /* Chord Pill Highlighting.
+           tab4u tags every chord with class="c_C" natively (this is
+           present across all song variants, unlike the nested ".chord"
+           class which only some songs include). Override tab4u's own
+           light-theme pill colors so chords stay readable on our dark
+           background, and make it authoritative for both .chord and
+           .c_C so styling is consistent no matter which markup a given
+           song uses. */
+        .chord, .c_C {
             display: inline-block;
-            background: rgba(56, 189, 248, 0.18);
-            color: var(--accent);
+            background: rgba(56, 189, 248, 0.18) !important;
+            color: var(--accent) !important;
             border: 1px solid rgba(56, 189, 248, 0.35);
-            padding: 0 4px;
+            padding: 0 4px !important;
+            margin: 0 2px 0 0 !important;
             border-radius: 4px;
             font-weight: bold;
-            margin-right: 2px;
         }
 
         .placeholder-state {
@@ -474,20 +486,24 @@
 
         const chordRegex = /\b([A-G][#b]?(?:m|maj|min|dim|aug|sus|add|[0-9])*(?:\/[A-G][#b]?)?)\b/g;
 
-        // tab4u's scraped HTML already tags every chord with class="chord"
-        // (nested inside a class="c_C" wrapper) and already lays chords out
-        // in a <table> with the exact spacing needed to sit above the right
-        // word. We don't need to re-detect chords ourselves — doing so was
-        // what broke multi-character chords (e.g. "Em" -> just "E" wrapped)
-        // and disturbed the alignment spacing between chords.
+        // tab4u tags every chord with class="c_C" — this is present on
+        // every song variant we've seen, unlike the nested ".chord" class
+        // which only some songs include. We key off .c_C consistently so
+        // transpose works regardless of which markup style a song uses.
         //
-        // So: insert the HTML as-is, then just tag each existing .chord
-        // span with its original (untransposed) text so transpose() can
-        // look it up later without re-parsing anything.
+        // tab4u also uses long runs of &nbsp; to push a chord sideways so
+        // it lines up above a specific later syllable — that positioning
+        // depends on tab4u's own custom monospace font (which 404s here)
+        // and possibly JS-computed pixel offsets we don't have access to.
+        // Rather than show unreliable, erratic gaps, we collapse any run
+        // of 2+ non-breaking spaces down to a single regular space, which
+        // gives a clean, consistently-spaced chord line above each lyric
+        // line (classic chord-sheet style) instead of imprecise stretching.
         function renderFormattedSong(htmlContent) {
-            songContainer.innerHTML = htmlContent;
+            const compact = htmlContent.replace(/(\u00A0){2,}/g, ' ');
+            songContainer.innerHTML = compact;
 
-            songContainer.querySelectorAll('.chord').forEach(span => {
+            songContainer.querySelectorAll('.c_C').forEach(span => {
                 if (!span.dataset.original) {
                     span.dataset.original = span.textContent;
                 }
@@ -554,7 +570,7 @@
             // text). This avoids re-rendering the whole song from scratch
             // on every click, which is what previously re-triggered the
             // buggy regex re-parsing and broke alignment/multi-char chords.
-            const chordSpans = songContainer.querySelectorAll('.chord');
+            const chordSpans = songContainer.querySelectorAll('.c_C');
             chordSpans.forEach(span => {
                 const original = span.dataset.original || span.textContent;
                 span.textContent = shiftChordText(original, currentSemitone);
