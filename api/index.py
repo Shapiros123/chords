@@ -49,6 +49,14 @@ def scrape_song():
         for unwanted in content_div.find_all(['script', 'style', 'iframe', 'ins', 'ads']):
             unwanted.decompose()
 
+        # Strip inline event handlers (onmouseover, onclick, etc.) left over
+        # from tab4u's own JS (e.g. sCI/CO chord-tooltip functions) which
+        # don't exist on our page and throw console errors on hover/click.
+        for tag in content_div.find_all(True):
+            for attr in list(tag.attrs):
+                if attr.startswith('on'):
+                    del tag.attrs[attr]
+
         return jsonify({"html": str(content_div)})
 
     except Exception as e:
