@@ -241,7 +241,7 @@
             width: 100%;
         }
 
-        /* Liquid Glass Tab Card - white-space: pre preserves exact column spacing */
+        /* Liquid Glass Tab Card */
         pre#song-content {
             font-family: "Courier New", Courier, monospace;
             font-size: 14px;
@@ -321,7 +321,7 @@
                     <button class="btn" onclick="transpose(-1)">-1</button>
                     <span id="transpose-val" style="font-size: 11px; font-weight: bold; min-width: 16px; text-align: center;">0</span>
                     <button class="btn" onclick="transpose(1)">+1</button>
-                    <button class="btn btn-success" onclick="resetTranspose()" title="Reset key">Easy</button>
+                    <button class="btn btn-success" onclick="suggestEasyKey()" title="Shift to C Major / A Minor">Easy</button>
                 </div>
 
                 <!-- Auto Scroll Controls -->
@@ -441,25 +441,7 @@
         function renderFormattedSong(textContent) {
             const lines = textContent.split('\n');
 
-            // Step 1: Calculate minimum leading whitespace across all non-empty lines to strip ugly table offsets
-            let minIndent = Infinity;
-            lines.forEach(line => {
-                if (line.trim().length > 0) {
-                    const match = line.match(/^([ \t]*)/);
-                    if (match) {
-                        minIndent = Math.min(minIndent, match[1].length);
-                    }
-                }
-            });
-            if (minIndent === Infinity || minIndent < 0) minIndent = 0;
-
-            // Step 2: Trim the common indentation from each line while keeping relative chord spacing
-            const formattedLines = lines.map(rawLine => {
-                let line = rawLine;
-                if (minIndent > 0 && line.length >= minIndent) {
-                    line = line.slice(minIndent);
-                }
-
+            const formattedLines = lines.map(line => {
                 const trimmed = line.trim();
                 if (trimmed.length > 0 && /^[A-G]/.test(trimmed)) {
                     const words = trimmed.split(/\s+/);
@@ -534,6 +516,35 @@
         function transpose(amount) {
             if (!originalSongContent) return;
             currentSemitone += amount;
+            transposeValEl.textContent = (currentSemitone > 0 ? "+" : "") + currentSemitone;
+            const transposedText = shiftChordText(originalSongContent, currentSemitone);
+            renderFormattedSong(transposedText);
+        }
+
+        // Smart Easy Key Transposer: detects first chord and shifts song to C Major or A Minor
+        function suggestEasyKey() {
+            if (!originalSongContent) return;
+
+            // Find the first valid chord in the song
+            const match = originalSongContent.match(chordRegex);
+            if (!match) return;
+
+            let firstChord = match[0].trim();
+            let rootMatch = firstChord.match(/^([A-G][#b]?)/);
+            if (!rootMatch) return;
+
+            let rootNote = rootMatch[1];
+            let isMinor = firstChord.includes('m') && !firstChord.includes('maj');
+
+            let currentPitch = noteToPitch[rootNote];
+            if (currentPitch === undefined) return;
+
+            // Target easy key: C (pitch 0) for major, Am (pitch 9) for minor
+            let targetPitch = isMinor ? 9 : 0;
+            let semitonesNeeded = (targetPitch - currentPitch + 12) % 12;
+            if (semitonesNeeded > 6) semitonesNeeded -= 12;
+
+            currentSemitone = semitonesNeeded;
             transposeValEl.textContent = (currentSemitone > 0 ? "+" : "") + currentSemitone;
             const transposedText = shiftChordText(originalSongContent, currentSemitone);
             renderFormattedSong(transposedText);

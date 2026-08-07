@@ -36,29 +36,24 @@ def scrape_song():
     content_div = soup.find('div', id='songContentTPL')
 
     if content_div:
-        for row in content_div.find_all('tr'):
-            line = row.get_text().replace('\xa0', ' ')
-            extracted_lines.append(line.rstrip('\n\r'))
+        # Clean up unwanted HTML tags while preserving text layout
+        for br in content_div.find_all("br"):
+            br.replace_with("\n")
 
-    # Backend Smart Indentation Stripper: removes uniform table offsets while keeping relative chord spaces
-    non_empty_lines = [l for l in extracted_lines if l.strip()]
-    if non_empty_lines:
-        min_indent = float('inf')
-        for l in non_empty_lines:
-            leading_spaces = len(l) - len(l.lstrip(' \t'))
-            if leading_spaces < min_indent:
-                min_indent = leading_spaces
+        # Parse rows cleanly
+        for row in content_div.find_all(['tr', 'p', 'div']):
+            text = row.get_text().replace('\xa0', ' ')
+            # Clean up excessive tabs/newlines within the row but keep column spacing
+            cleaned = re.sub(r'[ \t]+', ' ', text).strip()
+            if cleaned:
+                extracted_lines.append(cleaned)
 
-        if min_indent != float('inf') and min_indent > 0:
-            trimmed_lines = []
-            for l in extracted_lines:
-                if len(l) >= min_indent and l[:min_indent].isspace():
-                    trimmed_lines.append(l[min_indent:])
-                else:
-                    trimmed_lines.append(l)
-            extracted_lines = trimmed_lines
+    # Fallback if table parsing yielded nothing
+    if not extracted_lines and content_div:
+        raw_text = content_div.get_text().replace('\xa0', ' ')
+        extracted_lines = [line.strip() for line in raw_text.splitlines() if line.strip()]
 
-    raw_text = "\n".join(extracted_lines)
-    normalized_text = re.sub(r'\n{3,}', '\n\n', raw_text).strip()
+    normalized_text = "\n".join(extracted_lines)
+    normalized_text = re.sub(r'\n{3,}', '\n\n', normalized_text).strip()
 
     return jsonify({"content": normalized_text})
