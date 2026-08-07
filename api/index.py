@@ -36,22 +36,27 @@ def scrape_song():
     content_div = soup.find('div', id='songContentTPL')
 
     if content_div:
-        # Clean up unwanted HTML tags while preserving text layout
         for br in content_div.find_all("br"):
             br.replace_with("\n")
 
-        # Parse rows cleanly
         for row in content_div.find_all(['tr', 'p', 'div']):
             text = row.get_text().replace('\xa0', ' ')
-            # Clean up excessive tabs/newlines within the row but keep column spacing
-            cleaned = re.sub(r'[ \t]+', ' ', text).strip()
-            if cleaned:
+            # DO NOT collapse internal spaces! Preserve exact column spacing for chords.
+            cleaned = text.rstrip('\n\r')
+            if cleaned.strip():
                 extracted_lines.append(cleaned)
 
-    # Fallback if table parsing yielded nothing
     if not extracted_lines and content_div:
         raw_text = content_div.get_text().replace('\xa0', ' ')
-        extracted_lines = [line.strip() for line in raw_text.splitlines() if line.strip()]
+        extracted_lines = [line.rstrip('\n\r') for line in raw_text.splitlines() if line.strip()]
+
+    # Trim uniform leading indentation blocks
+    non_empty = [l for l in extracted_lines if l.strip()]
+    if non_empty:
+        min_indent = min(len(l) - len(l.lstrip(' \t')) for l in non_empty)
+        if min_indent > 0:
+            extracted_lines = [l[min_indent:] if len(l) >= min_indent and l[:min_indent].isspace() else l for l in
+                               extracted_lines]
 
     normalized_text = "\n".join(extracted_lines)
     normalized_text = re.sub(r'\n{3,}', '\n\n', normalized_text).strip()

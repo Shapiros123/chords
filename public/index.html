@@ -214,13 +214,6 @@
             box-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
         }
 
-        .btn-success {
-            background: var(--success);
-            color: #050b14;
-            border-color: transparent;
-        }
-        .btn-success:hover { opacity: 0.9; box-shadow: 0 0 12px rgba(16, 185, 129, 0.4); }
-
         input[type="range"] {
             accent-color: var(--accent);
             cursor: pointer;
@@ -258,7 +251,7 @@
             overflow-x: auto;
         }
 
-        /* Chord Pill Highlighting with spacing safeguards */
+        /* Chord Pill Highlighting with explicit spacing */
         .chord {
             display: inline-block;
             background: rgba(56, 189, 248, 0.18);
@@ -267,7 +260,7 @@
             padding: 0 4px;
             border-radius: 4px;
             font-weight: bold;
-            margin-right: 2px;
+            margin-right: 3px;
         }
 
         .placeholder-state {
@@ -322,7 +315,6 @@
                     <button class="btn" onclick="transpose(-1)">-1</button>
                     <span id="transpose-val" style="font-size: 11px; font-weight: bold; min-width: 16px; text-align: center;">0</span>
                     <button class="btn" onclick="transpose(1)">+1</button>
-                    <button class="btn btn-success" onclick="suggestEasyKey()" title="Shift to C Major / A Minor">Easy</button>
                 </div>
 
                 <!-- Auto Scroll Controls -->
@@ -442,30 +434,20 @@
         function renderFormattedSong(textContent) {
             const lines = textContent.split('\n');
 
-            let minIndent = Infinity;
-            lines.forEach(line => {
-                if (line.trim().length > 0) {
-                    const match = line.match(/^([ \t]*)/);
-                    if (match) minIndent = Math.min(minIndent, match[1].length);
-                }
-            });
-
             const formattedLines = lines.map(line => {
-                let l = (minIndent !== Infinity && minIndent > 0) ? line.slice(minIndent) : line;
-
-                const trimmed = l.trim();
+                const trimmed = line.trim();
                 if (trimmed.length > 0 && /^[A-G]/.test(trimmed)) {
                     const words = trimmed.split(/\s+/);
                     const singleCheck = /^([A-G][#b]?(?:m|maj|min|dim|aug|sus|add|[0-9])*(?:\/[A-G][#b]?)?)$/;
                     const chordCount = words.filter(w => singleCheck.test(w)).length;
 
                     if (chordCount / words.length >= 0.3) {
-                        return l.replace(chordRegex, (match, prefix, chord) => {
+                        return line.replace(chordRegex, (match, prefix, chord) => {
                             return prefix + '<span class="chord">' + chord + '</span>';
                         });
                     }
                 }
-                return escapeHtml(l);
+                return escapeHtml(line);
             });
 
             contentEl.innerHTML = formattedLines.join('\n');
@@ -532,37 +514,6 @@
             transposeValEl.textContent = (currentSemitone > 0 ? "+" : "") + currentSemitone;
             const transposedText = shiftChordText(originalSongContent, currentSemitone);
             renderFormattedSong(transposedText);
-        }
-
-        function suggestEasyKey() {
-            if (!originalSongContent) return;
-            const match = originalSongContent.match(chordRegex);
-            if (!match) return;
-
-            let firstChord = match[0].trim();
-            let rootMatch = firstChord.match(/^([A-G][#b]?)/);
-            if (!rootMatch) return;
-
-            let rootNote = rootMatch[1];
-            let isMinor = firstChord.includes('m') && !firstChord.includes('maj');
-
-            let currentPitch = noteToPitch[rootNote];
-            if (currentPitch === undefined) return;
-
-            let targetPitch = isMinor ? 9 : 0;
-            let semitonesNeeded = (targetPitch - currentPitch + 12) % 12;
-            if (semitonesNeeded > 6) semitonesNeeded -= 12;
-
-            currentSemitone = semitonesNeeded;
-            transposeValEl.textContent = (currentSemitone > 0 ? "+" : "") + currentSemitone;
-            const transposedText = shiftChordText(originalSongContent, currentSemitone);
-            renderFormattedSong(transposedText);
-        }
-
-        function resetTranspose() {
-            currentSemitone = 0;
-            transposeValEl.textContent = "0";
-            renderFormattedSong(originalSongContent);
         }
 
         function toggleAutoScroll() {
