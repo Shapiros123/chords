@@ -292,7 +292,28 @@
             white-space: pre;
             vertical-align: baseline;
             border: none !important;
+        }
+        /* Chord rows: tab4u splits these into two classes.
+           - .chords_en (English/Latin songs) reads/aligns left-to-right.
+           - .chords (Hebrew songs) still spells chord names left-to-right
+             (A, Bm, F#m are Latin letters) but right-aligns the whole
+             chord line, since it sits above right-to-left Hebrew lyrics. */
+        #song-content-container td.chords_en {
+            direction: ltr;
             text-align: left;
+        }
+        #song-content-container td.chords {
+            direction: ltr;
+            text-align: right;
+        }
+        /* Lyric rows share one class ("song") for both languages, so we
+           can't tell Hebrew from English by class alone. unicode-bidi:
+           plaintext lets the browser auto-detect direction per line from
+           its actual first strong character (Hebrew vs Latin) and align
+           accordingly, instead of forcing one direction on everything. */
+        #song-content-container td.song {
+            unicode-bidi: plaintext;
+            text-align: start;
         }
         #song-content-container td.chords,
         #song-content-container td.chords_en {
