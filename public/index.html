@@ -241,7 +241,7 @@
             width: 100%;
         }
 
-        /* Liquid Glass Tab Card - white-space: pre preserves exact column spacing */
+        /* Liquid Glass Tab Card */
         pre#song-content {
             font-family: "Courier New", Courier, monospace;
             font-size: 14px;
@@ -436,7 +436,8 @@
             });
         }
 
-        const universalChordRegex = /\b([A-G][b#]?(?:m|maj|min|dim|aug|sus|add|[0-9])*(?:\/[A-G][b#]?)?)\b/g;
+        // Perfect regex that captures full chord tokens including accidentals (#, b) and modifiers
+        const universalChordRegex = /\b([A-G][#b]?(?:m|maj|min|dim|aug|sus|add|[0-9])*(?:\/[A-G][#b]?)?)\b/g;
 
         function renderFormattedSong(textContent) {
             const lines = textContent.split('\n');
@@ -445,7 +446,7 @@
                 const trimmed = line.trim();
                 if (trimmed.length > 0 && /^[A-G]/.test(trimmed)) {
                     const words = trimmed.split(/\s+/);
-                    const chordCheck = /^([A-G][b#]?(?:m|maj|min|dim|aug|sus|add|[0-9])*(?:\/[A-G][b#]?)?)$/;
+                    const chordCheck = /^([A-G][#b]?(?:m|maj|min|dim|aug|sus|add|[0-9])*(?:\/[A-G][#b]?)?)$/;
                     const chordCount = words.filter(w => chordCheck.test(w)).length;
 
                     if (chordCount / words.length >= 0.4) {
@@ -471,7 +472,6 @@
             renderSongList(filtered);
         });
 
-        // Pitch-class music theory maps to eliminate double sharps/flats (e.g. C##)
         const noteToPitch = {
             'C': 0, 'B#': 0,
             'C#': 1, 'Db': 1,
@@ -502,7 +502,7 @@
         }
 
         function shiftSingleChord(chord, semitones) {
-            let rootMatch = chord.match(/^([A-G][b#]?)(.*)$/);
+            let rootMatch = chord.match(/^([A-G][#b]?)(.*)$/);
             if (!rootMatch) return chord;
             let note = rootMatch[1];
             let suffix = rootMatch[2];
