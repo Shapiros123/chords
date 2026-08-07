@@ -38,9 +38,25 @@ def scrape_song():
     if content_div:
         for row in content_div.find_all('tr'):
             line = row.get_text().replace('\xa0', ' ')
-            # DO NOT collapse multi-spaces here; preserve exact tab spacing for alignment!
-            cleaned_line = line.rstrip('\n\r')
-            extracted_lines.append(cleaned_line)
+            extracted_lines.append(line.rstrip('\n\r'))
+
+    # Backend Smart Indentation Stripper: removes uniform table offsets while keeping relative chord spaces
+    non_empty_lines = [l for l in extracted_lines if l.strip()]
+    if non_empty_lines:
+        min_indent = float('inf')
+        for l in non_empty_lines:
+            leading_spaces = len(l) - len(l.lstrip(' \t'))
+            if leading_spaces < min_indent:
+                min_indent = leading_spaces
+
+        if min_indent != float('inf') and min_indent > 0:
+            trimmed_lines = []
+            for l in extracted_lines:
+                if len(l) >= min_indent and l[:min_indent].isspace():
+                    trimmed_lines.append(l[min_indent:])
+                else:
+                    trimmed_lines.append(l)
+            extracted_lines = trimmed_lines
 
     raw_text = "\n".join(extracted_lines)
     normalized_text = re.sub(r'\n{3,}', '\n\n', raw_text).strip()
