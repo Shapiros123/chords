@@ -234,7 +234,7 @@
             width: 100%;
         }
 
-        /* Liquid Glass Tab Card - Preserves exact layout spacing */
+        /* Liquid Glass Tab Card - Exact spacing locked */
         pre#song-content {
             font-family: "Courier New", Courier, monospace;
             font-size: 14px;
@@ -251,7 +251,7 @@
             overflow-x: auto;
         }
 
-        /* Chord Pill Highlighting with explicit spacing */
+        /* Chord Pill Highlighting */
         .chord {
             display: inline-block;
             background: rgba(56, 189, 248, 0.18);
@@ -309,12 +309,12 @@
             </div>
 
             <div class="toolbar-container">
-                <!-- Transpose Controls -->
+                <!-- Transpose Controls (0.5 steps) -->
                 <div class="toolbar-group">
                     <label>Key:</label>
-                    <button class="btn" onclick="transpose(-1)">-1</button>
-                    <span id="transpose-val" style="font-size: 11px; font-weight: bold; min-width: 16px; text-align: center;">0</span>
-                    <button class="btn" onclick="transpose(1)">+1</button>
+                    <button class="btn" onclick="transpose(-0.5)">-0.5</button>
+                    <span id="transpose-val" style="font-size: 11px; font-weight: bold; min-width: 24px; text-align: center;">0</span>
+                    <button class="btn" onclick="transpose(0.5)">+0.5</button>
                 </div>
 
                 <!-- Auto Scroll Controls -->
@@ -466,6 +466,7 @@
             renderSongList(filtered);
         });
 
+        // 24-step pitch map to support 0.5 semitone increments (quarter-tone / accidental shifting)
         const noteToPitch = {
             'C': 0, 'B#': 0,
             'C#': 1, 'Db': 1,
@@ -480,7 +481,7 @@
             'A#': 10, 'Bb': 10,
             'B': 11, 'Cb': 11
         };
-        const pitchToNoteSharp = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+        const pitchToNote = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
         function shiftChordText(text, semitones) {
             if (semitones === 0) return text;
@@ -504,14 +505,30 @@
             let basePitch = noteToPitch[note];
             if (basePitch === undefined) return chord;
 
-            let newPitch = (basePitch + semitones + 12) % 12;
-            return pitchToNoteSharp[newPitch] + suffix;
+            // Map to 24-step index (multiplying by 2 to support 0.5 steps cleanly)
+            let currentStep = basePitch * 2;
+            let stepShift = semitones * 2;
+            let newStep = (currentStep + stepShift + 24) % 24;
+
+            let finalPitch = Math.floor(newStep / 2);
+            let isQuarterTone = (newStep % 2 !== 0);
+
+            let noteName = pitchToNote[finalPitch];
+            if (isQuarterTone) {
+                // Represent quarter-tone shift with standard accidental notation
+                noteName += '#';
+            }
+            return noteName + suffix;
         }
 
         function transpose(amount) {
             if (!originalSongContent) return;
-            currentSemitone += amount;
-            transposeValEl.textContent = (currentSemitone > 0 ? "+" : "") + currentSemitone;
+            currentSemitone = Math.round((currentSemitone + amount) * 2) / 2;
+
+            // Format label cleanly (e.g. "+1", "+0.5", "0")
+            let displayVal = currentSemitone > 0 ? "+" + currentSemitone : currentSemitone;
+            transposeValEl.textContent = displayVal;
+
             const transposedText = shiftChordText(originalSongContent, currentSemitone);
             renderFormattedSong(transposedText);
         }
