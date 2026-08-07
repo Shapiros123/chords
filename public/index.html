@@ -272,15 +272,6 @@
             overflow-x: auto;
         }
 
-        /* Force correct table rendering for scraped tab4u song content,
-           regardless of whether the #songContentTPL id wrapper survives
-           the fetch/insert round-trip intact, and regardless of whether
-           each verse comes as its own separate <table> or as orphaned
-           <tbody>/<tr>/<td> without a literal <table> ancestor (both
-           happen depending on the song). Forcing these display values
-           explicitly guarantees proper table layout either way, which
-           is what keeps chord rows tight and aligned above their lyrics
-           instead of drifting apart. */
         #song-content-container table { display: table; border-spacing: 0 1px; border-collapse: collapse; width: auto; margin: 0; }
         #song-content-container tbody { display: table-row-group; }
         #song-content-container tr { display: table-row; }
@@ -293,11 +284,6 @@
             vertical-align: baseline;
             border: none !important;
         }
-        /* Chord rows: tab4u splits these into two classes.
-           - .chords_en (English/Latin songs) reads/aligns left-to-right.
-           - .chords (Hebrew songs) still spells chord names left-to-right
-             (A, Bm, F#m are Latin letters) but right-aligns the whole
-             chord line, since it sits above right-to-left Hebrew lyrics. */
         #song-content-container td.chords_en {
             direction: ltr;
             text-align: left;
@@ -306,11 +292,6 @@
             direction: ltr;
             text-align: right;
         }
-        /* Lyric rows share one class ("song") for both languages, so we
-           can't tell Hebrew from English by class alone. unicode-bidi:
-           plaintext lets the browser auto-detect direction per line from
-           its actual first strong character (Hebrew vs Latin) and align
-           accordingly, instead of forcing one direction on everything. */
         #song-content-container td.song {
             unicode-bidi: plaintext;
             text-align: start;
@@ -320,14 +301,6 @@
             padding-top: 2px;
         }
 
-        /* Chord Pill Highlighting.
-           tab4u tags every chord with class="c_C" natively (this is
-           present across all song variants, unlike the nested ".chord"
-           class which only some songs include). Override tab4u's own
-           light-theme pill colors so chords stay readable on our dark
-           background, and make it authoritative for both .chord and
-           .c_C so styling is consistent no matter which markup a given
-           song uses. */
         .chord, .c_C {
             display: inline-block;
             background: rgba(56, 189, 248, 0.18) !important;
@@ -385,12 +358,12 @@
             </div>
 
             <div class="toolbar-container">
-                <!-- Transpose Controls (0.5 steps) -->
+                <!-- Transpose Controls (1 semitone steps) -->
                 <div class="toolbar-group">
                     <label>Key:</label>
-                    <button class="btn" onclick="transpose(-0.5)">-0.5</button>
+                    <button class="btn" onclick="transpose(-1)">-1</button>
                     <span id="transpose-val" style="font-size: 11px; font-weight: bold; min-width: 28px; text-align: center;">0</span>
-                    <button class="btn" onclick="transpose(0.5)">+0.5</button>
+                    <button class="btn" onclick="transpose(1)">+1</button>
                 </div>
 
                 <!-- Auto Scroll Controls -->
@@ -507,32 +480,8 @@
 
         const chordRegex = /\b([A-G][#b]?(?:m|maj|min|dim|aug|sus|add|[0-9])*(?:\/[A-G][#b]?)?)\b/g;
 
-        // tab4u tags every chord with class="c_C" — this is present on
-        // every song variant we've seen, unlike the nested ".chord" class
-        // which only some songs include. We key off .c_C consistently so
-        // transpose works regardless of which markup style a song uses.
-        //
-        // tab4u also uses long runs of &nbsp; to push a chord sideways so
-        // it lines up above a specific later syllable — that positioning
-        // depends on tab4u's own custom monospace font (which 404s here)
-        // and possibly JS-computed pixel offsets we don't have access to.
-        // Rather than show unreliable, erratic gaps, we collapse any run
-        // of 2+ non-breaking spaces down to a single regular space, which
-        // gives a clean, consistently-spaced chord line above each lyric
-        // line (classic chord-sheet style) instead of imprecise stretching.
         function renderFormattedSong(htmlContent) {
-            // Restore tab4u's original nbsp-based chord spacing (no longer
-            // collapsed to single spaces) now that the real bug — leftover
-            // tab/newline whitespace from tab4u's pretty-printed HTML source
-            // being preserved by white-space:pre — is fixed below. That
-            // leading indentation was very likely what was corrupting the
-            // alignment in the first place, so it's worth testing whether
-            // tab4u's actual spacing lines up correctly on its own now.
             const compact = htmlContent
-                // Strip leading/trailing whitespace (tabs, newlines, spaces)
-                // left over from how tab4u's HTML source is pretty-printed.
-                // Internal nbsp spacing (used for chord-to-syllable
-                // alignment) is left untouched.
                 .replace(/(<td[^>]*>)\s+/g, '$1')
                 .replace(/\s+(<\/td>)/g, '$1');
 
@@ -554,57 +503,44 @@
             renderSongList(filtered);
         });
 
-        const noteToPitch24 = {
-            'C': 0, 'B#': 0, 'C#': 1, 'Db': 1, 'D': 2, 'D#': 3, 'Eb': 3,
-            'E': 4, 'Fb': 4, 'F': 5, 'E#': 5, 'F#': 6, 'Gb': 6, 'G': 7,
-            'G#': 8, 'Ab': 8, 'A': 9, 'A#': 10, 'Bb': 10, 'B': 11, 'Cb': 11
-        };
-        const pitch24Notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+        function transposeChord(chord, amount) {
+            const semitones = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+            const flatMap = { "Db": "C#", "Eb": "D#", "Gb": "F#", "Ab": "G#", "Bb": "A#" };
+            
+            let root = chord.slice(0, 2);
+            let modifier = chord.slice(2);
+            if (flatMap[root]) {
+                root = flatMap[root];
+            } else {
+                root = chord[0];
+                modifier = chord.slice(1);
+            }
+            
+            let index = semitones.indexOf(root);
+            if (index === -1) return chord;
+            
+            let newIndex = (index + amount + 12) % 12;
+            return semitones[newIndex] + modifier;
+        }
 
         function shiftChordText(text, semitones) {
             if (semitones === 0) return text;
             return text.replace(chordRegex, (match, chord) => {
                 let parts = chord.split('/');
-                let transposedRoot = shiftSingleChord(parts[0], semitones);
+                let transposedRoot = transposeChord(parts[0], semitones);
                 if (parts.length > 1) {
-                    let transposedBass = shiftSingleChord(parts[1], semitones);
+                    let transposedBass = transposeChord(parts[1], semitones);
                     return transposedRoot + '/' + transposedBass;
                 }
                 return transposedRoot;
             });
         }
 
-        function shiftSingleChord(chord, semitones) {
-            let rootMatch = chord.match(/^([A-G][#b]?)(.*)$/);
-            if (!rootMatch) return chord;
-            let note = rootMatch[1];
-            let suffix = rootMatch[2];
-
-            let basePitch = noteToPitch24[note];
-            if (basePitch === undefined) return chord;
-
-            let currentStep = basePitch * 2;
-            let stepShift = Math.round(semitones * 2);
-            let newStep = (currentStep + stepShift + 24) % 24;
-
-            let finalPitchIndex = Math.floor(newStep / 2);
-            let isQuarterTone = (newStep % 2 !== 0);
-
-            let noteName = pitch24Notes[finalPitchIndex];
-            if (isQuarterTone) noteName += '#';
-            return noteName + suffix;
-        }
-
         function transpose(amount) {
             if (!originalHtmlContent) return;
-            currentSemitone = Math.round((currentSemitone + amount) * 2) / 2;
+            currentSemitone = currentSemitone + amount;
             transposeValEl.textContent = (currentSemitone > 0 ? "+" + currentSemitone : currentSemitone);
 
-            // Mutate the existing chord spans in place, always shifting from
-            // each span's stored ORIGINAL chord (not its current on-screen
-            // text). This avoids re-rendering the whole song from scratch
-            // on every click, which is what previously re-triggered the
-            // buggy regex re-parsing and broke alignment/multi-char chords.
             const chordSpans = songContainer.querySelectorAll('.c_C');
             chordSpans.forEach(span => {
                 const original = span.dataset.original || span.textContent;
