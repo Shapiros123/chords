@@ -272,6 +272,28 @@
             overflow-x: auto;
         }
 
+        /* Force correct table rendering for scraped tab4u song content,
+           regardless of whether the #songContentTPL id wrapper survives
+           the fetch/insert round-trip intact. This is what keeps chord
+           rows aligned above the right lyric text. */
+        #song-content-container table {
+            border-spacing: 0 2px;
+            border-collapse: collapse;
+            width: auto;
+        }
+        #song-content-container td,
+        #song-content-container th {
+            padding: 0;
+            margin: 0;
+            white-space: pre;
+            vertical-align: baseline;
+            border: none !important;
+            text-align: left;
+        }
+        #song-content-container td.chords {
+            padding-top: 4px;
+        }
+
         /* Chord Pill Highlighting */
         .chord {
             display: inline-block;
@@ -452,23 +474,22 @@
 
         const chordRegex = /\b([A-G][#b]?(?:m|maj|min|dim|aug|sus|add|[0-9])*(?:\/[A-G][#b]?)?)\b/g;
 
+        // tab4u's scraped HTML already tags every chord with class="chord"
+        // (nested inside a class="c_C" wrapper) and already lays chords out
+        // in a <table> with the exact spacing needed to sit above the right
+        // word. We don't need to re-detect chords ourselves — doing so was
+        // what broke multi-character chords (e.g. "Em" -> just "E" wrapped)
+        // and disturbed the alignment spacing between chords.
+        //
+        // So: insert the HTML as-is, then just tag each existing .chord
+        // span with its original (untransposed) text so transpose() can
+        // look it up later without re-parsing anything.
         function renderFormattedSong(htmlContent) {
             songContainer.innerHTML = htmlContent;
 
-            const walker = document.createTreeWalker(songContainer, NodeFilter.SHOW_TEXT, null, false);
-            let node;
-            const textNodes = [];
-            while (node = walker.nextNode()) {
-                textNodes.push(node);
-            }
-
-            textNodes.forEach(textNode => {
-                let text = textNode.nodeValue;
-                if (chordRegex.test(text)) {
-                    chordRegex.lastIndex = 0;
-                    const span = document.createElement('span');
-                    span.innerHTML = text.replace(chordRegex, '<span class="chord">$1</span>');
-                    textNode.parentNode.replaceChild(span, textNode);
+            songContainer.querySelectorAll('.chord').forEach(span => {
+                if (!span.dataset.original) {
+                    span.dataset.original = span.textContent;
                 }
             });
         }
@@ -528,11 +549,15 @@
             currentSemitone = Math.round((currentSemitone + amount) * 2) / 2;
             transposeValEl.textContent = (currentSemitone > 0 ? "+" + currentSemitone : currentSemitone);
 
-            renderFormattedSong(originalHtmlContent);
-
+            // Mutate the existing chord spans in place, always shifting from
+            // each span's stored ORIGINAL chord (not its current on-screen
+            // text). This avoids re-rendering the whole song from scratch
+            // on every click, which is what previously re-triggered the
+            // buggy regex re-parsing and broke alignment/multi-char chords.
             const chordSpans = songContainer.querySelectorAll('.chord');
             chordSpans.forEach(span => {
-                span.textContent = shiftChordText(span.textContent, currentSemitone);
+                const original = span.dataset.original || span.textContent;
+                span.textContent = shiftChordText(original, currentSemitone);
             });
         }
 

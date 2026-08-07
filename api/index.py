@@ -57,10 +57,7 @@ def scrape_song():
                 if attr.startswith('on'):
                     del tag.attrs[attr]
 
-        # Normalize non-breaking spaces (&nbsp; / \xa0) to regular spaces
-        html_output = str(content_div).replace('\xa0', ' ')
-
-        return jsonify({"html": html_output})
+        return jsonify({"html": str(content_div)})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
