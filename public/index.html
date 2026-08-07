@@ -34,7 +34,7 @@
             overflow: hidden;
         }
 
-        /* Glassmorphism Sidebar */
+        /* Sidebar */
         #sidebar {
             width: 360px;
             background: var(--glass-bg);
@@ -258,6 +258,17 @@
             word-wrap: break-word;
         }
 
+        /* Chord Pill Highlighting */
+        .chord {
+            display: inline-block;
+            background: rgba(56, 189, 248, 0.15);
+            color: var(--accent);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            padding: 1px 4px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
         .placeholder-state {
             display: flex;
             flex-direction: column;
@@ -310,7 +321,7 @@
                     <button class="btn" onclick="transpose(-1)">-1</button>
                     <span id="transpose-val" style="font-size: 11px; font-weight: bold; min-width: 16px; text-align: center;">0</span>
                     <button class="btn" onclick="transpose(1)">+1</button>
-                    <button class="btn btn-success" onclick="suggestEasyVersion()" title="Reset key">Easy</button>
+                    <button class="btn btn-success" onclick="resetTranspose()" title="Reset key">Easy</button>
                 </div>
 
                 <!-- Auto Scroll Controls -->
@@ -382,7 +393,6 @@
                 const item = document.createElement('div');
                 item.className = 'song-item';
 
-                // Check if title or artist is Hebrew for right-to-left sidebar rendering
                 const isHebrew = /[\u0590-\u05FF]/.test(song.Title) || /[\u0590-\u05FF]/.test(song.Artist);
                 item.style.direction = isHebrew ? 'rtl' : 'ltr';
                 item.style.textAlign = isHebrew ? 'right' : 'left';
@@ -413,7 +423,7 @@
                             }
 
                             originalSongContent = data.content;
-                            contentEl.textContent = originalSongContent;
+                            renderFormattedSong(originalSongContent);
 
                             contentEl.style.direction = isHebrew ? 'rtl' : 'ltr';
                             contentEl.style.textAlign = isHebrew ? 'right' : 'left';
@@ -424,6 +434,38 @@
                 });
                 songListDiv.appendChild(item);
             });
+        }
+
+        // Renders song content with highlighted chord pills while preserving exact spacing
+        function renderFormattedSong(textContent) {
+            const lines = textContent.split('\n');
+            const chordRegex = /\b([A-G][b#]?(?:m|maj|min|dim|aug|sus|[0-9])*(?:\/[A-G][b#]?)?)\b/g;
+
+            // Check if a line is primarily a chord line
+            const formattedLines = lines.map(line => {
+                // If line has lots of chords or spaces typical of chord formatting, wrap chord tokens in spans
+                const trimmed = line.trim();
+                // Match lines that look like chords
+                if (trimmed.length > 0 && /^[A-G]/.test(trimmed)) {
+                    // Check if most words are chords
+                    const words = trimmed.split(/\s+/);
+                    const chordCount = words.filter(w => /^[A-G][b#]?(m|maj|min|dim|aug|sus|[0-9])?(\/[A-G][b#]?)?$/.test(w)).length;
+
+                    if (chordCount / words.length >= 0.5) {
+                        // Replace chords with span elements safely
+                        let htmlLine = line;
+                        // Use a safe regex replacement approach
+                        return htmlLine.replace(/\b([A-G][b#]?(?:m|maj|min|dim|aug|sus|[0-9])*(?:\/[A-G][b#]?)?)\b/g, '<span class="chord">$1</span>');
+                    }
+                }
+                return escapeHtml(line);
+            });
+
+            contentEl.innerHTML = formattedLines.join('\n');
+        }
+
+        function escapeHtml(text) {
+            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
         }
 
         searchInput.addEventListener('input', (e) => {
@@ -438,7 +480,20 @@
         const chordsSharp = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
         const chordsFlat = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
 
-        function shiftChord(match, chord) {
+        function shiftChordText(text, semitones) {
+            if (semitones === 0) return text;
+            return text.replace(/\b([A-G][b#]?(?:m|maj|min|dim|aug|sus|[0-9])*(?:\/[A-G][b#]?)?)\b/g, (match) => {
+                let parts = match.split('/');
+                let transposedRoot = shiftSingleChord(parts[0], semitones);
+                if (parts.length > 1) {
+                    let transposedBass = shiftSingleChord(parts[1], semitones);
+                    return transposedRoot + '/' + transposedBass;
+                }
+                return transposedRoot;
+            });
+        }
+
+        function shiftSingleChord(chord, semitones) {
             let rootMatch = chord.match(/^([A-G][b#]?)(.*)$/);
             if (!rootMatch) return chord;
             let note = rootMatch[1];
@@ -446,7 +501,7 @@
             let idx = chordsSharp.indexOf(note);
             if (idx === -1) idx = chordsFlat.indexOf(note);
             if (idx === -1) return chord;
-            let newIdx = (idx + currentSemitone + 12) % 12;
+            let newIdx = (idx + semitones + 12) % 12;
             return chordsSharp[newIdx] + suffix;
         }
 
@@ -454,16 +509,14 @@
             if (!originalSongContent) return;
             currentSemitone += amount;
             transposeValEl.textContent = (currentSemitone > 0 ? "+" : "") + currentSemitone;
-            const transposedText = originalSongContent.replace(/\b([A-G][b#]?(?:m|maj|min|dim|aug|sus|[0-9])*)\b/g, (match, chord) => {
-                return shiftChord(match, chord);
-            });
-            contentEl.textContent = transposedText;
+            const transposedText = shiftChordText(originalSongContent, currentSemitone);
+            renderFormattedSong(transposedText);
         }
 
-        function suggestEasyVersion() {
+        function resetTranspose() {
             currentSemitone = 0;
             transposeValEl.textContent = "0";
-            contentEl.textContent = originalSongContent;
+            renderFormattedSong(originalSongContent);
         }
 
         function toggleAutoScroll() {
@@ -502,7 +555,7 @@
         }
 
         function copyChords() {
-            navigator.clipboard.writeText(contentEl.textContent).then(() => {
+            navigator.clipboard.writeText(contentEl.innerText).then(() => {
                 const btn = document.getElementById('copy-btn');
                 btn.textContent = 'Copied!';
                 setTimeout(() => btn.textContent = 'Copy', 2000);
