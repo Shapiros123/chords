@@ -241,7 +241,7 @@
             width: 100%;
         }
 
-        /* Liquid Glass Tab Card */
+        /* Liquid Glass Tab Card - white-space: pre locks exact spacing columns */
         pre#song-content {
             font-family: "Courier New", Courier, monospace;
             font-size: 14px;
@@ -436,8 +436,8 @@
             });
         }
 
-        // Perfect regex that captures full chord tokens including accidentals (#, b) and modifiers
-        const universalChordRegex = /\b([A-G][#b]?(?:m|maj|min|dim|aug|sus|add|[0-9])*(?:\/[A-G][#b]?)?)\b/g;
+        // Whitespace-anchored regex that correctly handles sharps/flats next to word boundaries without breaking
+        const chordRegex = /(^|\s)([A-G][#b]?(?:m|maj|min|dim|aug|sus|add|[0-9])*(?:\/[A-G][#b]?)?)(?=\s|$)/g;
 
         function renderFormattedSong(textContent) {
             const lines = textContent.split('\n');
@@ -446,11 +446,11 @@
                 const trimmed = line.trim();
                 if (trimmed.length > 0 && /^[A-G]/.test(trimmed)) {
                     const words = trimmed.split(/\s+/);
-                    const chordCheck = /^([A-G][#b]?(?:m|maj|min|dim|aug|sus|add|[0-9])*(?:\/[A-G][#b]?)?)$/;
-                    const chordCount = words.filter(w => chordCheck.test(w)).length;
+                    const singleCheck = /^([A-G][#b]?(?:m|maj|min|dim|aug|sus|add|[0-9])*(?:\/[A-G][#b]?)?)$/;
+                    const chordCount = words.filter(w => singleCheck.test(w)).length;
 
-                    if (chordCount / words.length >= 0.4) {
-                        return line.replace(universalChordRegex, '<span class="chord">$1</span>');
+                    if (chordCount / words.length >= 0.3) {
+                        return line.replace(chordRegex, '$1<span class="chord">$2</span>');
                     }
                 }
                 return escapeHtml(line);
@@ -490,14 +490,14 @@
 
         function shiftChordText(text, semitones) {
             if (semitones === 0) return text;
-            return text.replace(universalChordRegex, (match) => {
-                let parts = match.split('/');
+            return text.replace(chordRegex, (match, prefix, chord) => {
+                let parts = chord.split('/');
                 let transposedRoot = shiftSingleChord(parts[0], semitones);
                 if (parts.length > 1) {
                     let transposedBass = shiftSingleChord(parts[1], semitones);
-                    return transposedRoot + '/' + transposedBass;
+                    return prefix + transposedRoot + '/' + transposedBass;
                 }
-                return transposedRoot;
+                return prefix + transposedRoot;
             });
         }
 

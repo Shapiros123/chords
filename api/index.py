@@ -38,13 +38,10 @@ def scrape_song():
     if content_div:
         for row in content_div.find_all('tr'):
             line = row.get_text().replace('\xa0', ' ')
-            # Clean up massive internal whitespace/tabs while preserving lyrics
-            cleaned_line = re.sub(r'[ \t]{2,}', ' ', line).strip()
-            # Keep empty lines only if they separate sections, but avoid stacking multiple blanks
-            if cleaned_line or (extracted_lines and extracted_lines[-1] != ""):
-                extracted_lines.append(cleaned_line)
+            # DO NOT collapse multi-spaces here; preserve exact tab spacing for alignment!
+            cleaned_line = line.rstrip('\n\r')
+            extracted_lines.append(cleaned_line)
 
-    # Join and trim excessive consecutive empty lines
     raw_text = "\n".join(extracted_lines)
     normalized_text = re.sub(r'\n{3,}', '\n\n', raw_text).strip()
 
