@@ -241,11 +241,11 @@
             width: 100%;
         }
 
-        /* Liquid Glass Tab Card */
+        /* Liquid Glass Tab Card - Preserves exact layout spacing */
         pre#song-content {
             font-family: "Courier New", Courier, monospace;
             font-size: 14px;
-            line-height: 1.6;
+            line-height: 1.8;
             color: #f1f5f9;
             background: var(--glass-card);
             backdrop-filter: blur(12px);
@@ -258,15 +258,16 @@
             overflow-x: auto;
         }
 
-        /* Chord Pill Highlighting */
+        /* Chord Pill Highlighting with spacing safeguards */
         .chord {
             display: inline-block;
             background: rgba(56, 189, 248, 0.18);
             color: var(--accent);
             border: 1px solid rgba(56, 189, 248, 0.35);
-            padding: 1px 4px;
+            padding: 0 4px;
             border-radius: 4px;
             font-weight: bold;
+            margin-right: 2px;
         }
 
         .placeholder-state {
@@ -441,18 +442,30 @@
         function renderFormattedSong(textContent) {
             const lines = textContent.split('\n');
 
+            let minIndent = Infinity;
+            lines.forEach(line => {
+                if (line.trim().length > 0) {
+                    const match = line.match(/^([ \t]*)/);
+                    if (match) minIndent = Math.min(minIndent, match[1].length);
+                }
+            });
+
             const formattedLines = lines.map(line => {
-                const trimmed = line.trim();
+                let l = (minIndent !== Infinity && minIndent > 0) ? line.slice(minIndent) : line;
+
+                const trimmed = l.trim();
                 if (trimmed.length > 0 && /^[A-G]/.test(trimmed)) {
                     const words = trimmed.split(/\s+/);
                     const singleCheck = /^([A-G][#b]?(?:m|maj|min|dim|aug|sus|add|[0-9])*(?:\/[A-G][#b]?)?)$/;
                     const chordCount = words.filter(w => singleCheck.test(w)).length;
 
                     if (chordCount / words.length >= 0.3) {
-                        return line.replace(chordRegex, '$1<span class="chord">$2</span>');
+                        return l.replace(chordRegex, (match, prefix, chord) => {
+                            return prefix + '<span class="chord">' + chord + '</span>';
+                        });
                     }
                 }
-                return escapeHtml(line);
+                return escapeHtml(l);
             });
 
             contentEl.innerHTML = formattedLines.join('\n');
@@ -521,11 +534,8 @@
             renderFormattedSong(transposedText);
         }
 
-        // Smart Easy Key Transposer: detects first chord and shifts song to C Major or A Minor
         function suggestEasyKey() {
             if (!originalSongContent) return;
-
-            // Find the first valid chord in the song
             const match = originalSongContent.match(chordRegex);
             if (!match) return;
 
@@ -539,7 +549,6 @@
             let currentPitch = noteToPitch[rootNote];
             if (currentPitch === undefined) return;
 
-            // Target easy key: C (pitch 0) for major, Am (pitch 9) for minor
             let targetPitch = isMinor ? 9 : 0;
             let semitonesNeeded = (targetPitch - currentPitch + 12) % 12;
             if (semitonesNeeded > 6) semitonesNeeded -= 12;
