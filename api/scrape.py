@@ -4,29 +4,11 @@ import json
 import requests
 from bs4 import BeautifulSoup
 import os
-import pandas as pd
 
-# Load the CSV once when the function cold-starts
-csv_path = os.path.join(os.path.dirname(__file__), '..', 'tab4u_guitar_urls_only.csv')
-df = pd.read_csv(csv_path)
-
-
-def extract_names_from_url(url):
-    filename = url.split('/')[-1].replace('.html', '')
-    parts = filename.split('_', 1)
-    name_part = parts[1] if len(parts) > 1 else filename
-    if "_-_" in name_part:
-        artist, title = name_part.split("_-_", 1)
-    else:
-        artist, title = "Unknown", name_part
-    return {
-        "Artist": artist.replace('_', ' '),
-        "Title": title.replace('_', ' '),
-        "URL": url
-    }
-
-
-song_directory = [extract_names_from_url(url) for url in df['song_url'].tolist()]
+# Load the song directory from the local JSON file
+json_path = os.path.join(os.path.dirname(__file__), 'songs.json')
+with open(json_path, 'r', encoding='utf-8') as f:
+    song_directory = json.load(f)
 
 
 class handler(BaseHTTPRequestHandler):
@@ -34,7 +16,7 @@ class handler(BaseHTTPRequestHandler):
         parsed_path = urlparse(self.path)
         query_params = parse_qs(parsed_path.query)
 
-        # Route 1: Get the list of songs for the sidebar
+        # Route 1: Serve the song index
         if parsed_path.path == '/api/songs':
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
@@ -53,8 +35,6 @@ class handler(BaseHTTPRequestHandler):
                 return
 
             target_url = url_list[0]
-
-            # Scrape Tab4U live
             headers = {'User-Agent': 'Mozilla/5.0'}
             response = requests.get(target_url, headers=headers)
 
