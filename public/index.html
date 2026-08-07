@@ -5,6 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TabStudio Liquid Glass</title>
     <style>
+        /* === Tab4U Native Stylesheet Integration === */
+        @font-face{
+            font-family:'open sans hebrew';
+            font-style:normal;
+            src:url('fontOS.eot');
+            src:local('open sans hebrew'), url('fontOS.eot') format('embedded-opentype'), url('fontOS.woff') format('woff');
+            font-display:swap;
+        }
+        @font-face{font-family:'fontCR';src:url('../fontCR.ttf');font-display:swap;}
+
+        #songContentTPL{min-height:460px; position:relative;}
+        #songContentTPL table{border-spacing:0px 2px; border-collapse:collapse; width:auto;}
+        #songContentTPL td, #songContentTPL th{padding:0; margin:0; white-space:pre; vertical-align:baseline; border:none !important;}
+        .chords .c_C, .chords_en .c_C, .noCI{border-radius:4px; padding:0px 3px; margin:0px -3px; color:#2566F1 !important; background:#DFE8FE !important;}
+        .monospaceFont{font-family:fontCR, "Courier New", Courier, Droid Sans Mono, monospace !important;}
+        #songContent .chords, .song_block .chords{font-family:fontCR, "Courier New", Courier, Droid Sans Mono, monospace !important; padding-top:4px; direction:ltr; font-size:14px; text-align:right;}
+        #songContent .chords_en, .song_block .chords_en{font-family:fontCR, "Courier New", Courier, Droid Sans Mono, monospace !important; padding-top:4px; direction:ltr; font-size:14px; text-align:left;}
+        #songContent .tabs, .song_block .tabs{color:#3e3e3e; font-family:fontCR, "Courier New", Courier, Droid Sans Mono, monospace !important; direction:ltr; font-size:14px; white-space:nowrap;}
+        #songContent .song, .song_block .song{font-family:fontCR, "Courier New", Courier, Droid Sans Mono, monospace !important; font-size:14px; text-decoration:none;}
+
+        /* === App Liquid Glass Theme Shell === */
         :root {
             --bg-base: #050b14;
             --glass-bg: rgba(17, 24, 39, 0.65);
@@ -19,10 +40,10 @@
             --warning: #f59e0b;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * { box-sizing: border-box; margin: 0; padding: 0; outline: none; }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'open sans hebrew', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--bg-base);
             background-image:
                 radial-gradient(circle at 10% 20%, rgba(56, 189, 248, 0.12) 0%, transparent 40%),
@@ -32,6 +53,7 @@
             height: 100vh;
             width: 100vw;
             overflow: hidden;
+            scroll-behavior: smooth;
         }
 
         /* Sidebar */
@@ -234,10 +256,10 @@
             width: 100%;
         }
 
-        /* Tab4U Native CSS Alignment Clone */
+        /* Native Container Wrapper */
         #song-content-container {
-            font-family: "Courier New", Courier, Droid Sans Mono, monospace;
-            font-size: 14px;
+            font-family: fontCR, "Courier New", Courier, Droid Sans Mono, monospace;
+            font-size: 15px;
             line-height: 1.6;
             color: #f1f5f9;
             background: var(--glass-card);
@@ -248,20 +270,6 @@
             border: 1px solid var(--glass-border);
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
             overflow-x: auto;
-        }
-
-        /* Exact Tab4U Table Grid Rules */
-        #song-content-container table {
-            border-collapse: collapse;
-            width: auto;
-            border-spacing: 0px 2px;
-        }
-        #song-content-container td, #song-content-container th {
-            padding: 0;
-            margin: 0;
-            white-space: pre;
-            vertical-align: baseline;
-            border: none !important;
         }
 
         /* Chord Pill Highlighting */
@@ -361,7 +369,7 @@
 
     <script>
         let allSongs = [];
-        let currentFontSize = 14;
+        let currentFontSize = 15;
         let originalHtmlContent = "";
         let currentSemitone = 0;
         let autoScrollInterval = null;
@@ -559,7 +567,7 @@
         }
 
         function adjustFontSize(delta) {
-            currentFontSize = Math.max(11, Math.min(22, currentFontSize + delta));
+            currentFontSize = Math.max(11, Math.min(24, currentFontSize + delta));
             songContainer.style.fontSize = currentFontSize + 'px';
         }
 
