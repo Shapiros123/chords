@@ -40,7 +40,7 @@ def scrape_song():
 
         # Target Tab4U's native content containers
         content_div = soup.find('div', id='songContentTPL') or soup.find('div', id='songContent') or soup.find('div',
-                                                                                                               class_='song_block')
+                                                                                                             class_='song_block')
 
         if not content_div:
             return jsonify({"error": "Song content block not found"}), 404
