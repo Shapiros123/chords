@@ -364,6 +364,8 @@
                     <button class="btn" onclick="transpose(-1)">-1</button>
                     <span id="transpose-val" style="font-size: 11px; font-weight: bold; min-width: 28px; text-align: center;">0</span>
                     <button class="btn" onclick="transpose(1)">+1</button>
+                    <button class="btn" id="simplify-btn" onclick="toggleSimplify()" style="margin-left: 4px; background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.4); color: var(--success);">Simplify</button>
+                    <button class="btn" id="easiest-key-btn" onclick="toggleEasiestKey()" style="background: rgba(56, 189, 248, 0.15); border-color: rgba(56, 189, 248, 0.4); color: var(--accent);">Easiest Key</button>
                 </div>
 
                 <!-- Auto Scroll Controls -->
@@ -400,6 +402,9 @@
         let currentFontSize = 15;
         let originalHtmlContent = "";
         let currentSemitone = 0;
+        let previousSemitone = 0;
+        let isSimplifyMode = false;
+        let isEasiestMode = false;
         let autoScrollInterval = null;
         let isScrolling = false;
 
@@ -416,6 +421,8 @@
         const scrollSpeedInput = document.getElementById('scroll-speed');
         const autoscrollBtn = document.getElementById('autoscroll-btn');
         const transposeValEl = document.getElementById('transpose-val');
+        const simplifyBtn = document.getElementById('simplify-btn');
+        const easiestKeyBtn = document.getElementById('easiest-key-btn');
 
         fetch('/api/songs')
             .then(res => res.json())
@@ -454,7 +461,12 @@
                     artistEl.textContent = song.Artist;
                     songContainer.innerHTML = "Loading native sheet...";
                     currentSemitone = 0;
+                    previousSemitone = 0;
+                    isSimplifyMode = false;
+                    isEasiestMode = false;
                     transposeValEl.textContent = "0";
+                    updateSimplifyUI();
+                    updateEasiestKeyUI();
 
                     fetch(`/api/scrape?url=${encodeURIComponent(song.URL)}`)
                         .then(res => res.json())
@@ -469,6 +481,9 @@
 
                             songContainer.style.direction = isHebrew ? 'rtl' : 'ltr';
                             songContainer.style.textAlign = isHebrew ? 'right' : 'left';
+                            
+                            // Initialize chords to run through our cleanup even if semitones = 0
+                            updateSongDisplay();
                         })
                         .catch(() => {
                             songContainer.innerHTML = "Failed to fetch song content.";
@@ -478,7 +493,8 @@
             });
         }
 
-        const chordRegex = /\b([A-G][#b]?(?:m|maj|min|dim|aug|sus|add|[0-9])*(?:\/[A-G][#b]?)?)\b/g;
+        // Fixed Regex: Old \b failed to match trailing '#' symbols on chords, preventing them from shifting.
+        const chordRegex = /\b([A-G][#b]?(?:m|maj|min|dim|aug|sus|add|[0-9])*(?:\/[A-G][#b]?)?)(?![a-zA-Z0-9#b])/g;
 
         function renderFormattedSong(htmlContent) {
             const compact = htmlContent
@@ -505,26 +521,39 @@
 
         function transposeChord(chord, amount) {
             const semitones = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-            const flatMap = { "Db": "C#", "Eb": "D#", "Gb": "F#", "Ab": "G#", "Bb": "A#" };
+            // Expanded flatMap to catch extreme edge cases
+            const flatMap = { 
+                "Db": "C#", "Eb": "D#", "Gb": "F#", "Ab": "G#", "Bb": "A#",
+                "Cb": "B",  "Fb": "E",  "E#": "F",  "B#": "C"
+            };
             
-            let root = chord.slice(0, 2);
-            let modifier = chord.slice(2);
+            const match = chord.match(/^([A-G][#b]?)(.*)$/);
+            if (!match) return chord;
+            
+            let root = match[1];
+            let modifier = match[2];
+            
             if (flatMap[root]) {
                 root = flatMap[root];
-            } else {
-                root = chord[0];
-                modifier = chord.slice(1);
             }
             
             let index = semitones.indexOf(root);
             if (index === -1) return chord;
             
-            let newIndex = (index + amount + 12) % 12;
-            return semitones[newIndex] + modifier;
+            // Fixed negative modulo bug for infinite transposing
+            let newIndex = (((index + amount) % 12) + 12) % 12;
+            let result = semitones[newIndex] + modifier;
+
+            // CLEANUP ENGINE: Aggressively eliminates accidental artifacts 
+            result = result.replace(/##+/g, '#');
+            result = result.replace(/b#/g, '#');
+            result = result.replace(/bb+/g, 'b');
+
+            return result;
         }
 
         function shiftChordText(text, semitones) {
-            if (semitones === 0) return text;
+            // Removed 'if (semitones === 0)' early return so cleanup rules always apply
             return text.replace(chordRegex, (match, chord) => {
                 let parts = chord.split('/');
                 let transposedRoot = transposeChord(parts[0], semitones);
@@ -536,16 +565,135 @@
             });
         }
 
-        function transpose(amount) {
-            if (!originalHtmlContent) return;
-            currentSemitone = currentSemitone + amount;
-            transposeValEl.textContent = (currentSemitone > 0 ? "+" + currentSemitone : currentSemitone);
+        function simplifyChordText(text) {
+            return text.replace(chordRegex, (match, chord) => {
+                let parts = chord.split('/');
+                let simplifiedRoot = simplifySingleChord(parts[0]);
+                if (parts.length > 1) {
+                    let simplifiedBass = simplifySingleChord(parts[1]);
+                    return simplifiedRoot + '/' + simplifiedBass;
+                }
+                return simplifiedRoot;
+            });
+        }
 
+        function simplifySingleChord(chord) {
+            const match = chord.match(/^([A-G][#b]?)(.*)$/);
+            if (!match) return chord;
+            let note = match[1];
+            let suffix = match[2];
+
+            let isMinor = suffix.startsWith('m') && !suffix.startsWith('maj');
+            return note + (isMinor ? 'm' : '');
+        }
+
+        function updateSongDisplay() {
             const chordSpans = songContainer.querySelectorAll('.c_C');
             chordSpans.forEach(span => {
                 const original = span.dataset.original || span.textContent;
-                span.textContent = shiftChordText(original, currentSemitone);
+                let text = shiftChordText(original, currentSemitone);
+                if (isSimplifyMode) {
+                    text = simplifyChordText(text);
+                }
+                span.textContent = text;
             });
+        }
+
+        function transpose(amount) {
+            if (!originalHtmlContent) return;
+            if (isEasiestMode) {
+                isEasiestMode = false;
+                updateEasiestKeyUI();
+            }
+            currentSemitone = currentSemitone + amount;
+            transposeValEl.textContent = (currentSemitone > 0 ? "+" + currentSemitone : currentSemitone);
+            updateSongDisplay();
+        }
+
+        function toggleEasiestKey() {
+            if (!originalHtmlContent) return;
+
+            if (isEasiestMode) {
+                currentSemitone = previousSemitone;
+                isEasiestMode = false;
+                updateEasiestKeyUI();
+                transposeValEl.textContent = (currentSemitone > 0 ? "+" + currentSemitone : currentSemitone);
+                updateSongDisplay();
+                return;
+            }
+
+            const chordSpans = songContainer.querySelectorAll('.c_C');
+            if (chordSpans.length === 0) return;
+
+            previousSemitone = currentSemitone;
+            let bestShift = 0;
+            let minScore = Infinity;
+
+            for (let shift = -6; shift <= 5; shift++) {
+                let sharpCount = 0;
+                let nonStandardCount = 0;
+
+                chordSpans.forEach(span => {
+                    const original = span.dataset.original;
+                    if (!original) return;
+                    let shifted = shiftChordText(original, shift);
+                    let match = shifted.match(/^([A-G][#b]?)/);
+                    if (match) {
+                        if (match[1].includes('#')) {
+                            sharpCount++;
+                        } else if (!["C", "G", "D", "A", "F", "E", "Bb", "Eb"].includes(match[1])) {
+                            nonStandardCount++;
+                        }
+                    }
+                });
+
+                let score = sharpCount * 1000 + nonStandardCount * 10 + Math.abs(shift);
+                if (score < minScore) {
+                    minScore = score;
+                    bestShift = shift;
+                }
+            }
+
+            currentSemitone = bestShift;
+            isEasiestMode = true;
+            updateEasiestKeyUI();
+            transposeValEl.textContent = (currentSemitone > 0 ? "+" + currentSemitone : currentSemitone);
+            updateSongDisplay();
+        }
+
+        function updateEasiestKeyUI() {
+            if (isEasiestMode) {
+                easiestKeyBtn.style.background = 'var(--accent)';
+                easiestKeyBtn.style.color = '#050b14';
+                easiestKeyBtn.style.borderColor = 'transparent';
+                easiestKeyBtn.style.boxShadow = '0 0 10px rgba(56, 189, 248, 0.4)';
+            } else {
+                easiestKeyBtn.style.background = 'rgba(56, 189, 248, 0.15)';
+                easiestKeyBtn.style.color = 'var(--accent)';
+                easiestKeyBtn.style.borderColor = 'rgba(56, 189, 248, 0.4)';
+                easiestKeyBtn.style.boxShadow = 'none';
+            }
+        }
+
+        function toggleSimplify() {
+            if (!originalHtmlContent) return;
+            isSimplifyMode = !isSimplifyMode;
+            updateSimplifyUI();
+            updateSongDisplay();
+        }
+
+        function updateSimplifyUI() {
+            if (isSimplifyMode) {
+                simplifyBtn.style.background = 'var(--success)';
+                simplifyBtn.style.color = '#050b14';
+                simplifyBtn.style.borderColor = 'transparent';
+                simplifyBtn.style.boxShadow = '0 0 10px rgba(16, 185, 129, 0.4)';
+            } else {
+                simplifyBtn.style.background = 'rgba(16, 185, 129, 0.15)';
+                simplifyBtn.style.color = 'var(--success)';
+                simplifyBtn.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+                simplifyBtn.style.boxShadow = 'none';
+            }
         }
 
         function toggleAutoScroll() {
