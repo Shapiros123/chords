@@ -500,7 +500,17 @@
         // gives a clean, consistently-spaced chord line above each lyric
         // line (classic chord-sheet style) instead of imprecise stretching.
         function renderFormattedSong(htmlContent) {
-            const compact = htmlContent.replace(/(\u00A0){2,}/g, ' ');
+            const compact = htmlContent
+                .replace(/(\u00A0){2,}/g, ' ')
+                // Strip leading/trailing whitespace (tabs, newlines, spaces)
+                // left over from how tab4u's HTML source is pretty-printed.
+                // With white-space:pre preserving spacing, this leftover
+                // indentation was rendering as extra blank lines and a
+                // horizontal offset on lyric lines that chord lines didn't
+                // have — internal single spaces between words are untouched.
+                .replace(/(<td[^>]*>)\s+/g, '$1')
+                .replace(/\s+(<\/td>)/g, '$1');
+
             songContainer.innerHTML = compact;
 
             songContainer.querySelectorAll('.c_C').forEach(span => {
