@@ -516,7 +516,9 @@
         });
 
         function transposeChord(chord, amount) {
-            const semitones = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+            // Using flat-preferred semitone scale to completely prevent sharp (#) notes/symbols
+            const semitones = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
+            const baseSemitones = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
             const flatMap = { "Db": "C#", "Eb": "D#", "Gb": "F#", "Ab": "G#", "Bb": "A#" };
             
             const match = chord.match(/^([A-G][#b]?)(.*)$/);
@@ -525,11 +527,8 @@
             let root = match[1];
             let modifier = match[2];
             
-            if (flatMap[root]) {
-                root = flatMap[root];
-            }
-            
-            let index = semitones.indexOf(root);
+            let standardRoot = flatMap[root] || root;
+            let index = baseSemitones.indexOf(standardRoot);
             if (index === -1) return chord;
             
             let newIndex = (index + amount + 12) % 12;
@@ -614,24 +613,23 @@
             let minScore = Infinity;
 
             for (let shift = -6; shift <= 5; shift++) {
-                let sharpCount = 0;
+                let flatFriendlyCount = 0;
                 let nonStandardCount = 0;
 
                 chordSpans.forEach(span => {
                     const original = span.dataset.original;
                     if (!original) return;
                     let shifted = shiftChordText(original, shift);
-                    let match = shifted.match(/^([A-G][#b]?)/);
+                    let match = shifted.match(/^([A-G][b]?)/);
                     if (match) {
-                        if (match[1].includes('#')) {
-                            sharpCount++;
-                        } else if (!["C", "G", "D", "A", "F", "E", "Bb", "Eb"].includes(match[1])) {
+                        // Heavily reward clean guitar-friendly natural/flat keys (C, G, D, A, F, Bb, Eb)
+                        if (!["C", "G", "D", "A", "F", "Bb", "Eb"].includes(match[1])) {
                             nonStandardCount++;
                         }
                     }
                 });
 
-                let score = sharpCount * 1000 + nonStandardCount * 10 + Math.abs(shift);
+                let score = nonStandardCount * 10 + Math.abs(shift);
                 if (score < minScore) {
                     minScore = score;
                     bestShift = shift;
