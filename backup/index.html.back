@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TabStudio Liquid Glass</title>
+    <style>
+        /* === Tab4U Native Stylesheet Integration === */
+        @font-face{
+            font-family:'open sans hebrew';
+            font-style:normal;
+            src:url('fontOS.eot');
+            src:local('open sans hebrew'), url('fontOS.eot') format('embedded-opentype'), url('fontOS.woff') format('woff');
+            font-display:swap;
+        }
+        @font-face{font-family:'fontCR';src:url('../fontCR.ttf');font-display:swap;}
+
+        #songContentTPL{min-height:460px; position:relative;}
+        #songContentTPL table{border-spacing:0px 2px; border-collapse:collapse; width:auto;}
+        #songContentTPL td, #songContentTPL th{padding:0; margin:0; white-space:pre; vertical-align:baseline; border:none !important;}
+        .chords .c_C, .chords_en .c_C, .noCI{border-radius:4px; padding:0px 3px; margin:0px -3px; color:#2566F1 !important; background:#DFE8FE !important;}
+        .monospaceFont{font-family:fontCR, "Courier New", Courier, Droid Sans Mono, monospace !important;}
+        #songContent .chords, .song_block .chords{font-family:fontCR, "Courier New", Courier, Droid Sans Mono, monospace !important; padding-top:4px; direction:ltr; font-size:14px; text-align:right;}
+        #songContent .chords_en, .song_block .chords_en{font-family:fontCR, "Courier New", Courier, Droid Sans Mono, monospace !important; padding-top:4px; direction:ltr; font-size:14px; text-align:left;}
+        #songContent .tabs, .song_block .tabs{color:#3e3e3e; font-family:fontCR, "Courier New", Courier, Droid Sans Mono, monospace !important; direction:ltr; font-size:14px; white-space:nowrap;}
+        #songContent .song, .song_block .song{font-family:fontCR, "Courier New", Courier, Droid Sans Mono, monospace !important; font-size:14px; text-decoration:none;}
+
+        /* === App Liquid Glass Theme Shell === */
+        :root {
+            --bg-base: #050b14;
+            --glass-bg: rgba(17, 24, 39, 0.65);
+            --glass-card: rgba(15, 23, 42, 0.5);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-border-hover: rgba(56, 189, 248, 0.3);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #38bdf8;
+            --accent-hover: #0ea5e9;
+            --success: #10b981;
+            --warning: #f59e0b;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; outline: none; }
+
+        body {
+            font-family: 'open sans hebrew', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-base);
+            background-image:
+                radial-gradient(circle at 10% 20%, rgba(56, 189, 248, 0.12) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.08) 0%, transparent 40%);
+            color: var(--text-main);
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            scroll-behavior: smooth;
+        }
+
+        /* Sidebar */
+        #sidebar {
+            width: 360px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-right: 1px solid var(--glass-border);
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            flex-shrink: 0;
+            box-shadow: 10px 0 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .sidebar-header {
+            padding: 20px 20px 14px 20px;
+            font-size: 17px;
+            font-weight: 700;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .sidebar-header span {
+            color: var(--accent);
+            font-size: 11px;
+            background: rgba(56, 189, 248, 0.12);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+
+        .search-container {
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--glass-border);
+            background: rgba(10, 15, 28, 0.4);
+        }
+
+        #search-input {
+            width: 100%;
+            padding: 9px 12px;
+            background: rgba(5, 11, 20, 0.6);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            color: var(--text-main);
+            font-size: 13px;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        #search-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
+        }
+
+        #song-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .song-item {
+            padding: 12px 20px;
+            cursor: pointer;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            transition: all 0.15s ease;
+        }
+
+        .song-item:hover {
+            background: rgba(56, 189, 248, 0.06);
+            padding-left: 24px;
+        }
+
+        .song-item.active {
+            background: rgba(56, 189, 248, 0.12);
+            border-left: 3px solid var(--accent);
+            border-bottom-color: var(--glass-border);
+        }
+
+        .song-item strong {
+            display: block;
+            color: var(--text-main);
+            font-size: 14px;
+            margin-bottom: 2px;
+        }
+
+        .song-item span {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        /* Main View */
+        #main-view {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            overflow: hidden;
+            background: transparent;
+        }
+
+        .viewer-header {
+            padding: 14px 24px;
+            border-bottom: 1px solid var(--glass-border);
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            flex-shrink: 0;
+            z-index: 10;
+        }
+
+        .song-meta h1 {
+            font-size: 18px;
+            color: var(--text-main);
+            margin-bottom: 2px;
+        }
+
+        .song-meta h3 {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: normal;
+        }
+
+        .toolbar-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .toolbar-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(10, 15, 28, 0.5);
+            border: 1px solid var(--glass-border);
+            padding: 4px 10px;
+            border-radius: 8px;
+        }
+
+        .toolbar-group label {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn {
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text-main);
+            border: 1px solid var(--glass-border);
+            padding: 5px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 600;
+            transition: all 0.15s ease;
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: var(--glass-border-hover);
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: #050b14;
+            border-color: transparent;
+        }
+        .btn-primary:hover {
+            background: var(--accent-hover);
+            box-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
+        }
+
+        input[type="range"] {
+            accent-color: var(--accent);
+            cursor: pointer;
+            width: 70px;
+        }
+
+        /* Content Scroll Wrapper */
+        .content-scroll {
+            flex: 1;
+            overflow-y: auto;
+            padding: 35px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .content-wrapper {
+            max-width: 950px;
+            width: 100%;
+        }
+
+        /* Native Container Wrapper */
+        #song-content-container {
+            font-family: fontCR, "Courier New", Courier, Droid Sans Mono, monospace;
+            font-size: 15px;
+            line-height: 1.6;
+            color: #f1f5f9;
+            background: var(--glass-card);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            padding: 35px;
+            border-radius: 14px;
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            overflow-x: auto;
+        }
+
+        #song-content-container table { display: table; border-spacing: 0 1px; border-collapse: collapse; width: auto; margin: 0; }
+        #song-content-container tbody { display: table-row-group; }
+        #song-content-container tr { display: table-row; }
+        #song-content-container td,
+        #song-content-container th {
+            display: table-cell;
+            padding: 0;
+            margin: 0;
+            white-space: pre;
+            vertical-align: baseline;
+            border: none !important;
+        }
+        #song-content-container td.chords_en {
+            direction: ltr;
+            text-align: left;
+        }
+        #song-content-container td.chords {
+            direction: ltr;
+            text-align: right;
+        }
+        #song-content-container td.song {
+            unicode-bidi: plaintext;
+            text-align: start;
+        }
+        #song-content-container td.chords,
+        #song-content-container td.chords_en {
+            padding-top: 2px;
+        }
+
+        .chord, .c_C {
+            display: inline-block;
+            background: rgba(56, 189, 248, 0.18) !important;
+            color: var(--accent) !important;
+            border: 1px solid rgba(56, 189, 248, 0.35);
+            padding: 0 4px !important;
+            margin: 0 2px 0 0 !important;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .placeholder-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        .placeholder-state svg {
+            width: 44px;
+            height: 44px;
+            margin-bottom: 12px;
+            opacity: 0.3;
+        }
+
+        /* Scrollbars */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.12); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.25); }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <div id="sidebar">
+        <div class="sidebar-header">
+            TabStudio <span id="song-count">Loading...</span>
+        </div>
+        <div class="search-container">
+            <input type="text" id="search-input" placeholder="Search artist or title...">
+        </div>
+        <div id="song-list"></div>
+    </div>
+
+    <!-- Main View -->
+    <div id="main-view">
+        <div class="viewer-header" id="viewer-header" style="display: none;">
+            <div class="song-meta">
+                <h1 id="song-title"></h1>
+                <h3 id="song-artist"></h3>
+            </div>
+
+            <div class="toolbar-container">
+                <!-- Transpose Controls (1 semitone steps) -->
+                <div class="toolbar-group">
+                    <label>Key:</label>
+                    <button class="btn" onclick="transpose(-1)">-1</button>
+                    <span id="transpose-val" style="font-size: 11px; font-weight: bold; min-width: 28px; text-align: center;">0</span>
+                    <button class="btn" onclick="transpose(1)">+1</button>
+                </div>
+
+                <!-- Auto Scroll Controls -->
+                <div class="toolbar-group">
+                    <label>Scroll:</label>
+                    <button class="btn btn-primary" id="autoscroll-btn" onclick="toggleAutoScroll()">Play ⏵</button>
+                    <input type="range" id="scroll-speed" min="1" max="5" value="1">
+                </div>
+
+                <!-- Font & Copy -->
+                <div class="toolbar-group">
+                    <button class="btn" onclick="adjustFontSize(1)">A+</button>
+                    <button class="btn" onclick="adjustFontSize(-1)">A-</button>
+                    <button class="btn" onclick="copyChords()" id="copy-btn">Copy</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-scroll" id="content-scroll-container">
+            <div id="placeholder" class="placeholder-state">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                </svg>
+                <p>Select a song from your library to start playing</p>
+            </div>
+            <div class="content-wrapper" id="content-wrapper" style="display: none;">
+                <div id="song-content-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allSongs = [];
+        let currentFontSize = 15;
+        let originalHtmlContent = "";
+        let currentSemitone = 0;
+        let autoScrollInterval = null;
+        let isScrolling = false;
+
+        const songListDiv = document.getElementById('song-list');
+        const searchInput = document.getElementById('search-input');
+        const viewerHeader = document.getElementById('viewer-header');
+        const titleEl = document.getElementById('song-title');
+        const artistEl = document.getElementById('song-artist');
+        const songContainer = document.getElementById('song-content-container');
+        const contentWrapper = document.getElementById('content-wrapper');
+        const placeholderEl = document.getElementById('placeholder');
+        const songCountEl = document.getElementById('song-count');
+        const scrollContainer = document.getElementById('content-scroll-container');
+        const scrollSpeedInput = document.getElementById('scroll-speed');
+        const autoscrollBtn = document.getElementById('autoscroll-btn');
+        const transposeValEl = document.getElementById('transpose-val');
+
+        fetch('/api/songs')
+            .then(res => res.json())
+            .then(songs => {
+                allSongs = songs;
+                songCountEl.textContent = `${songs.length} tabs`;
+                renderSongList(songs);
+            })
+            .catch(() => {
+                songCountEl.textContent = 'Error';
+                songListDiv.innerHTML = '<div style="padding: 20px; color: #f87171;">Failed to load catalog.</div>';
+            });
+
+        function renderSongList(songsToRender) {
+            songListDiv.innerHTML = '';
+            songsToRender.forEach(song => {
+                const item = document.createElement('div');
+                item.className = 'song-item';
+
+                const isHebrew = /[\u0590-\u05FF]/.test(song.Title) || /[\u0590-\u05FF]/.test(song.Artist);
+                item.style.direction = isHebrew ? 'rtl' : 'ltr';
+                item.style.textAlign = isHebrew ? 'right' : 'left';
+
+                item.innerHTML = `<strong>${song.Title}</strong><span>${song.Artist}</span>`;
+
+                item.addEventListener('click', () => {
+                    stopAutoScroll();
+                    document.querySelectorAll('.song-item').forEach(el => el.classList.remove('active'));
+                    item.classList.add('active');
+
+                    placeholderEl.style.display = 'none';
+                    viewerHeader.style.display = 'flex';
+                    contentWrapper.style.display = 'block';
+
+                    titleEl.textContent = song.Title;
+                    artistEl.textContent = song.Artist;
+                    songContainer.innerHTML = "Loading native sheet...";
+                    currentSemitone = 0;
+                    transposeValEl.textContent = "0";
+
+                    fetch(`/api/scrape?url=${encodeURIComponent(song.URL)}`)
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.error) {
+                                songContainer.innerHTML = "Error loading song.";
+                                return;
+                            }
+
+                            originalHtmlContent = data.html;
+                            renderFormattedSong(originalHtmlContent);
+
+                            songContainer.style.direction = isHebrew ? 'rtl' : 'ltr';
+                            songContainer.style.textAlign = isHebrew ? 'right' : 'left';
+                        })
+                        .catch(() => {
+                            songContainer.innerHTML = "Failed to fetch song content.";
+                        });
+                });
+                songListDiv.appendChild(item);
+            });
+        }
+
+        const chordRegex = /\b([A-G][#b]?(?:m|maj|min|dim|aug|sus|add|[0-9])*(?:\/[A-G][#b]?)?)\b/g;
+
+        function renderFormattedSong(htmlContent) {
+            const compact = htmlContent
+                .replace(/(<td[^>]*>)\s+/g, '$1')
+                .replace(/\s+(<\/td>)/g, '$1');
+
+            songContainer.innerHTML = compact;
+
+            songContainer.querySelectorAll('.c_C').forEach(span => {
+                if (!span.dataset.original) {
+                    span.dataset.original = span.textContent;
+                }
+            });
+        }
+
+        searchInput.addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase();
+            const filtered = allSongs.filter(song =>
+                song.Title.toLowerCase().includes(query) ||
+                song.Artist.toLowerCase().includes(query)
+            );
+            renderSongList(filtered);
+        });
+
+        function transposeChord(chord, amount) {
+            const semitones = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+            const flatMap = { "Db": "C#", "Eb": "D#", "Gb": "F#", "Ab": "G#", "Bb": "A#" };
+            
+            let root = chord.slice(0, 2);
+            let modifier = chord.slice(2);
+            if (flatMap[root]) {
+                root = flatMap[root];
+            } else {
+                root = chord[0];
+                modifier = chord.slice(1);
+            }
+            
+            let index = semitones.indexOf(root);
+            if (index === -1) return chord;
+            
+            let newIndex = (index + amount + 12) % 12;
+            return semitones[newIndex] + modifier;
+        }
+
+        function shiftChordText(text, semitones) {
+            if (semitones === 0) return text;
+            return text.replace(chordRegex, (match, chord) => {
+                let parts = chord.split('/');
+                let transposedRoot = transposeChord(parts[0], semitones);
+                if (parts.length > 1) {
+                    let transposedBass = transposeChord(parts[1], semitones);
+                    return transposedRoot + '/' + transposedBass;
+                }
+                return transposedRoot;
+            });
+        }
+
+        function transpose(amount) {
+            if (!originalHtmlContent) return;
+            currentSemitone = currentSemitone + amount;
+            transposeValEl.textContent = (currentSemitone > 0 ? "+" + currentSemitone : currentSemitone);
+
+            const chordSpans = songContainer.querySelectorAll('.c_C');
+            chordSpans.forEach(span => {
+                const original = span.dataset.original || span.textContent;
+                span.textContent = shiftChordText(original, currentSemitone);
+            });
+        }
+
+        function toggleAutoScroll() {
+            if (isScrolling) {
+                stopAutoScroll();
+            } else {
+                startAutoScroll();
+            }
+        }
+
+        function startAutoScroll() {
+            isScrolling = true;
+            autoscrollBtn.textContent = 'Pause ⏸';
+            autoscrollBtn.style.backgroundColor = 'var(--warning)';
+
+            autoScrollInterval = setInterval(() => {
+                const speed = parseInt(scrollSpeedInput.value);
+                scrollContainer.scrollTop += speed * 0.6;
+
+                if (scrollContainer.scrollTop + scrollContainer.clientHeight >= scrollContainer.scrollHeight - 5) {
+                    stopAutoScroll();
+                }
+            }, 60);
+        }
+
+        function stopAutoScroll() {
+            isScrolling = false;
+            clearInterval(autoScrollInterval);
+            autoscrollBtn.textContent = 'Play ⏵';
+            autoscrollBtn.style.backgroundColor = 'var(--accent)';
+        }
+
+        function adjustFontSize(delta) {
+            currentFontSize = Math.max(11, Math.min(24, currentFontSize + delta));
+            songContainer.style.fontSize = currentFontSize + 'px';
+        }
+
+        function copyChords() {
+            navigator.clipboard.writeText(songContainer.innerText).then(() => {
+                const btn = document.getElementById('copy-btn');
+                btn.textContent = 'Copied!';
+                setTimeout(() => btn.textContent = 'Copy', 2000);
+            });
+        }
+    </script>
+</body>
+</html>

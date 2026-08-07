@@ -364,6 +364,7 @@
                     <button class="btn" onclick="transpose(-1)">-1</button>
                     <span id="transpose-val" style="font-size: 11px; font-weight: bold; min-width: 28px; text-align: center;">0</span>
                     <button class="btn" onclick="transpose(1)">+1</button>
+                    <button class="btn" id="easy-mode-btn" onclick="toggleEasyMode()" style="margin-left: 4px; background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.4); color: var(--success);">Easy Ver</button>
                 </div>
 
                 <!-- Auto Scroll Controls -->
@@ -400,6 +401,7 @@
         let currentFontSize = 15;
         let originalHtmlContent = "";
         let currentSemitone = 0;
+        let isEasyMode = false;
         let autoScrollInterval = null;
         let isScrolling = false;
 
@@ -416,6 +418,7 @@
         const scrollSpeedInput = document.getElementById('scroll-speed');
         const autoscrollBtn = document.getElementById('autoscroll-btn');
         const transposeValEl = document.getElementById('transpose-val');
+        const easyModeBtn = document.getElementById('easy-mode-btn');
 
         fetch('/api/songs')
             .then(res => res.json())
@@ -454,7 +457,9 @@
                     artistEl.textContent = song.Artist;
                     songContainer.innerHTML = "Loading native sheet...";
                     currentSemitone = 0;
+                    isEasyMode = false;
                     transposeValEl.textContent = "0";
+                    updateEasyModeUI();
 
                     fetch(`/api/scrape?url=${encodeURIComponent(song.URL)}`)
                         .then(res => res.json())
@@ -536,16 +541,67 @@
             });
         }
 
+        function simplifyChordText(text) {
+            return text.replace(chordRegex, (match, chord) => {
+                let parts = chord.split('/');
+                let simplifiedRoot = simplifySingleChord(parts[0]);
+                if (parts.length > 1) {
+                    let simplifiedBass = simplifySingleChord(parts[1]);
+                    return simplifiedRoot + '/' + simplifiedBass;
+                }
+                return simplifiedRoot;
+            });
+        }
+
+        function simplifySingleChord(chord) {
+            // Strip complex extensions (7, maj7, sus4, add9, dim, aug, etc.) but preserve minor (m)
+            let rootMatch = chord.match(/^([A-G][#b]?)(.*)$/);
+            if (!rootMatch) return chord;
+            let note = rootMatch[1];
+            let suffix = rootMatch[2];
+
+            let isMinor = suffix.startsWith('m') && !suffix.startsWith('maj');
+            return note + (isMinor ? 'm' : '');
+        }
+
+        function updateSongDisplay() {
+            const chordSpans = songContainer.querySelectorAll('.c_C');
+            chordSpans.forEach(span => {
+                const original = span.dataset.original || span.textContent;
+                let text = shiftChordText(original, currentSemitone);
+                if (isEasyMode) {
+                    text = simplifyChordText(text);
+                }
+                span.textContent = text;
+            });
+        }
+
         function transpose(amount) {
             if (!originalHtmlContent) return;
             currentSemitone = currentSemitone + amount;
             transposeValEl.textContent = (currentSemitone > 0 ? "+" + currentSemitone : currentSemitone);
+            updateSongDisplay();
+        }
 
-            const chordSpans = songContainer.querySelectorAll('.c_C');
-            chordSpans.forEach(span => {
-                const original = span.dataset.original || span.textContent;
-                span.textContent = shiftChordText(original, currentSemitone);
-            });
+        function toggleEasyMode() {
+            if (!originalHtmlContent) return;
+            isEasyMode = !isEasyMode;
+            updateEasyModeUI();
+            updateSongDisplay();
+        }
+
+        function updateEasyModeUI() {
+            if (isEasyMode) {
+                easyModeBtn.style.background = 'var(--success)';
+                easyModeBtn.style.color = '#050b14';
+                easyModeBtn.style.borderColor = 'transparent';
+                easyModeBtn.style.boxShadow = '0 0 10px rgba(16, 185, 129, 0.4)';
+            } else {
+                easyModeBtn.style.background = 'rgba(16, 185, 129, 0.15)';
+                easyModeBtn.style.color = 'var(--success)';
+                easyModeBtn.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+                easyModeBtn.style.boxShadow = 'none';
+            }
         }
 
         function toggleAutoScroll() {
