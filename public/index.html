@@ -234,10 +234,10 @@
             width: 100%;
         }
 
-        /* Tab4U Native CSS Clone Container */
+        /* Tab4U Native CSS Alignment Clone */
         #song-content-container {
-            font-family: "Courier New", Courier, monospace;
-            font-size: 15px;
+            font-family: "Courier New", Courier, Droid Sans Mono, monospace;
+            font-size: 14px;
             line-height: 1.6;
             color: #f1f5f9;
             background: var(--glass-card);
@@ -250,16 +250,18 @@
             overflow-x: auto;
         }
 
-        /* Cloned Tab4U Table Grid Styling */
+        /* Exact Tab4U Table Grid Rules */
         #song-content-container table {
             border-collapse: collapse;
             width: auto;
+            border-spacing: 0px 2px;
         }
         #song-content-container td, #song-content-container th {
             padding: 0;
             margin: 0;
             white-space: pre;
             vertical-align: baseline;
+            border: none !important;
         }
 
         /* Chord Pill Highlighting */
@@ -359,7 +361,7 @@
 
     <script>
         let allSongs = [];
-        let currentFontSize = 15;
+        let currentFontSize = 14;
         let originalHtmlContent = "";
         let currentSemitone = 0;
         let autoScrollInterval = null;
@@ -442,11 +444,9 @@
 
         const chordRegex = /\b([A-G][#b]?(?:m|maj|min|dim|aug|sus|add|[0-9])*(?:\/[A-G][#b]?)?)\b/g;
 
-        // Renders native HTML and highlights text nodes matching chords with pills
         function renderFormattedSong(htmlContent) {
             songContainer.innerHTML = htmlContent;
 
-            // Walk through text nodes inside the song container to wrap chords cleanly
             const walker = document.createTreeWalker(songContainer, NodeFilter.SHOW_TEXT, null, false);
             let node;
             const textNodes = [];
@@ -457,7 +457,6 @@
             textNodes.forEach(textNode => {
                 let text = textNode.nodeValue;
                 if (chordRegex.test(text)) {
-                    // Reset regex index
                     chordRegex.lastIndex = 0;
                     const span = document.createElement('span');
                     span.innerHTML = text.replace(chordRegex, '<span class="chord">$1</span>');
@@ -476,18 +475,9 @@
         });
 
         const noteToPitch24 = {
-            'C': 0, 'B#': 0,
-            'C#': 1, 'Db': 1,
-            'D': 2,
-            'D#': 3, 'Eb': 3,
-            'E': 4, 'Fb': 4,
-            'F': 5, 'E#': 5,
-            'F#': 6, 'Gb': 6,
-            'G': 7,
-            'G#': 8, 'Ab': 8,
-            'A': 9,
-            'A#': 10, 'Bb': 10,
-            'B': 11, 'Cb': 11
+            'C': 0, 'B#': 0, 'C#': 1, 'Db': 1, 'D': 2, 'D#': 3, 'Eb': 3,
+            'E': 4, 'Fb': 4, 'F': 5, 'E#': 5, 'F#': 6, 'Gb': 6, 'G': 7,
+            'G#': 8, 'Ab': 8, 'A': 9, 'A#': 10, 'Bb': 10, 'B': 11, 'Cb': 11
         };
         const pitch24Notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
@@ -530,10 +520,8 @@
             currentSemitone = Math.round((currentSemitone + amount) * 2) / 2;
             transposeValEl.textContent = (currentSemitone > 0 ? "+" + currentSemitone : currentSemitone);
 
-            // Re-render original HTML with shifted chords
             renderFormattedSong(originalHtmlContent);
 
-            // Perform live DOM chord text node substitution for transposition
             const chordSpans = songContainer.querySelectorAll('.chord');
             chordSpans.forEach(span => {
                 span.textContent = shiftChordText(span.textContent, currentSemitone);
@@ -571,7 +559,7 @@
         }
 
         function adjustFontSize(delta) {
-            currentFontSize = Math.max(11, Math.min(24, currentFontSize + delta));
+            currentFontSize = Math.max(11, Math.min(22, currentFontSize + delta));
             songContainer.style.fontSize = currentFontSize + 'px';
         }
 
